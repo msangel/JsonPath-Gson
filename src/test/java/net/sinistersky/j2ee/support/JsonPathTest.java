@@ -1,23 +1,17 @@
 package net.sinistersky.j2ee.support;
 
-import static org.junit.Assert.*;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import net.sinistersky.j2ee.support.JsonPath2.Expression;
+import net.sinistersky.j2ee.support.iterators.PeekableIterator;
+import net.sinistersky.j2ee.support.nodetypes.*;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sinistersky.j2ee.support.JsonPath2.Expression;
-import net.sinistersky.j2ee.support.iterators.PeekableIterator;
-import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
-import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
-import net.sinistersky.j2ee.support.nodetypes.PathNode;
-import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
-import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
-import net.sinistersky.j2ee.support.nodetypes.WildcardPathNode;
-
-import org.junit.Test;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JsonPathTest {
 
@@ -188,22 +182,31 @@ public class JsonPathTest {
 		assertEquals(3, expression.getNodes().size());
 	}
 	
-	@Test(expected=JsonPathException.class)
+	@Test
 	public void test_invalid_content_exception(){
+		assertThrows(JsonPathException.class, () -> {
 		String str = "$.a[]";
 		new Parser().parseExpression(str);
+		});
+
 	}
 	
-	@Test(expected=JsonPathException.class)
+	@Test
 	public void test_invalid_content_exception2(){
+				assertThrows(JsonPathException.class, () -> {
 		String str = "$.a[   ]";
 		new Parser().parseExpression(str);
+		});
+
 	}
 	
-	@Test(expected=JsonPathException.class)
+	@Test
 	public void test_invalid_content_exception3(){
+						assertThrows(JsonPathException.class, () -> {
+
 		String str = "$.a[   ].d";
 		new Parser().parseExpression(str);
+		});
 	}
 	
 	public void test_brecket_parser_wildcard(){

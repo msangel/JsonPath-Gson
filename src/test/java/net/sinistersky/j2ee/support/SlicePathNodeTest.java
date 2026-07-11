@@ -1,23 +1,25 @@
 package net.sinistersky.j2ee.support;
 
-import static org.junit.Assert.*;
+import com.google.gson.JsonElement;
+import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import net.sinistersky.j2ee.support.JsonPathException;
-import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
-
-import com.google.gson.JsonElement;
 
 public class SlicePathNodeTest {
 	
 	SlicePathNode node = null;
 
-	@Test(expected=JsonPathException.class)
+	@Test
 	public void test_RangeIndexPathNode_can_not_have_zero_step() {
+		assertThrows(JsonPathException.class, () -> {
 		new SlicePathNode(0, 10, 0);
+		});
+
 	}
 	
 	@Test

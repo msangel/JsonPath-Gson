@@ -16,30 +16,30 @@ import com.google.gson.JsonParser;
 
 
 public class JsonPath2 {
-	
-	
 
-	
-	
+
+
+
+
 	static public class Expression{
-		
+
 		final List <PathNode> nodes;
 		public Expression(List <PathNode> nodes) {
 			this.nodes = nodes;
 		}
-		
+
 		// XXX: for using same expression with few objects in same time this list should be immutable.
-		// Possible solutions: 
+		// Possible solutions:
 		// 1) make list unchangeable and all PathNodes immutable
-		// 2) make list unchangeable and return deep copy of obtained object each time 
+		// 2) make list unchangeable and return deep copy of obtained object each time
 		public List<PathNode> getNodes() {
 			return nodes;
 		}
-		
+
 		List<JsonElement> exec(String strJson){
 			return exec(new JsonParser().parse(strJson));
 		}
-		
+
 		List<JsonElement> exec(JsonElement obj){
 			ArrayList<JsonElement> list = new ArrayList<JsonElement>();
 			list.add(obj);
@@ -51,23 +51,23 @@ public class JsonPath2 {
 			}
 			return res;
 		}
-		
+
 		PeekableIterator<JsonElement> exec(final PeekableIterator<JsonElement> in, final int filterPosition){
-			
+
 			// System.out.println(getStackOffset()+"start exec on iter:" + in+ "filter is:"+filterPosition + " val is:" +(filterPosition>=nodes.size()?"-":nodes.get(filterPosition)));
-			// in - масив входных данных, по каждому елементу этого массива нужно выполнить выражение и собрать результаты в один список
-			// 
+			// in - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+			//
 			PeekableIterator<JsonElement> res = new ExecIterator(this, in, filterPosition);
 			return res;
 		}
-		
-	} 
+
+	}
 
 	public static void main(String[] args) throws JsonPathException {
-		
+
 		System.out.println("ok start");
-		
-		
+
+
 		String json = "{'c':[{'v':5}, {'v': 'lold'}]}";
 		Expression expression = new Parser().parseExpression("$.c[*].v");
 //		Expression expression = new Parser().parseExpression("$.c");
@@ -83,7 +83,7 @@ public class JsonPath2 {
 		assertEquals(2, elements.size());
 		assertEquals(5, elements.get(0).getAsInt());
 		assertEquals("lold", elements.get(1).getAsString());
-		
+
 		System.out.println("ok2");
 	}
 
@@ -93,7 +93,7 @@ public class JsonPath2 {
 			throw new RuntimeException("<"+a+"> is not same as <"+b+">");
 		}
 	}
-	
+
 	public static void assertTrue(Boolean a) {
 		if(a==null){
 			throw new RuntimeException("null is not same as True");
@@ -102,7 +102,7 @@ public class JsonPath2 {
 			throw new RuntimeException("<"+a+"> is not True");
 		}
 	}
-	
+
 	public static String getStackOffset(){
 		StringBuilder sb = new StringBuilder();
 		for (int i=6; i< Thread.currentThread().getStackTrace().length; i++){

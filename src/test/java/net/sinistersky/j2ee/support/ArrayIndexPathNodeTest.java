@@ -1,14 +1,16 @@
 package net.sinistersky.j2ee.support;
 
-import static org.junit.Assert.*;
 
 import java.util.List;
 
 import net.sinistersky.j2ee.support.Parser;
 
-import org.junit.Test;
 
 import com.google.gson.JsonElement;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ArrayIndexPathNodeTest {
 

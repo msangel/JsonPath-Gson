@@ -96,8 +96,8 @@ public class JsonPathTest {
 	public void test_recursive_elemets_path_node_filter(){
 		String json = "{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d': 777}}]}";
 		RecursiveDescentPathNode node = new  RecursiveDescentPathNode();
-		PeekableIterator<JsonElement> list = node.filter(new JsonParser().parse(json));
-		ArrayList<JsonElement> res = new ArrayList<JsonElement>();
+		PeekableIterator<JsonElement> list = node.filter(JsonParser.parseString(json));
+		ArrayList<JsonElement> res = new ArrayList<>();
 		while(list.hasNext()){
 			res.add(list.next());
 		} 
@@ -134,7 +134,7 @@ public class JsonPathTest {
 	@Test
 	public void test_descent_path_iterator(){
 		RecursiveDescentPathNode node = new RecursiveDescentPathNode();
-		PeekableIterator<JsonElement> test = node.filter(new JsonParser().parse("{" +
+		PeekableIterator<JsonElement> test = node.filter(JsonParser.parseString("{" +
 				"'a':'b', " +
 				"'c':'d', " +
 				"'e':{}, " +
@@ -144,7 +144,7 @@ public class JsonPathTest {
 				"}"));
 		assertEquals("b", test.next().getAsJsonPrimitive().getAsString()); // "b"
 		assertEquals("d", test.next().getAsJsonPrimitive().getAsString()); // "d"
-		assertEquals(true, test.next().getAsJsonObject().entrySet().isEmpty()); // {}
+        assertTrue(test.next().getAsJsonObject().entrySet().isEmpty()); // {}
 		assertEquals("h", test.next().getAsJsonObject().get("g").getAsString()); // {"g":"h"}
 		assertEquals("h", test.next().getAsJsonPrimitive().getAsString()); // "h"
 		assertEquals("m", test.next().getAsJsonObject().get("l").getAsString()); // {"j":"k","l":"m"}
@@ -163,7 +163,7 @@ public class JsonPathTest {
 "z"
 "ab"
 		 */
-		ArrayList<JsonElement> list = new ArrayList<JsonElement>();
+		ArrayList<JsonElement> list = new ArrayList<>();
 		while (test.hasNext()){
 			list.add(test.next());
 		}
@@ -213,68 +213,68 @@ public class JsonPathTest {
 	public void test_brecket_parser_wildcard(){
 		BracketsParser a = new BracketsParser(0);
 		a.consumeAll("*]");
-		assertTrue(WildcardPathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(WildcardPathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("* ]");
-		assertTrue(WildcardPathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(WildcardPathNode.class, a.getResult());
 	}
 	
 	@Test
-	public void test_brecket_parser_arrs(){
+	public void test_bracket_parser_arrs(){
 	
-		BracketsParser a = new BracketsParser(0);
+		BracketsParser a;
 		// 
 		
 		a = new BracketsParser(0);
 		a.consumeAll("0]");
-		assertTrue(ArrayIndexPathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(ArrayIndexPathNode.class, a.getResult());
 		
 		
 		a = new BracketsParser(0);
 		a.consumeAll("0 ]");
-		assertTrue(ArrayIndexPathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(ArrayIndexPathNode.class, a.getResult());
 		
 		
 		a = new BracketsParser(0);
 		a.consumeAll("0,1]");
-		assertTrue(CSVIndexPathNode.class.isInstance(a.getResult()));
-		assertEquals(2, CSVIndexPathNode.class.cast(a.getResult()).getIndexes().size());
-		
+        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
+		assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
+
 		a = new BracketsParser(0);
 		a.consumeAll("0,1 ]");
-		assertTrue(CSVIndexPathNode.class.isInstance(a.getResult()));
-		assertEquals(2, CSVIndexPathNode.class.cast(a.getResult()).getIndexes().size());
-		
+        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
+		assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
+
 		a = new BracketsParser(0);
 		a.consumeAll("0, 1 ]");
-		assertTrue(CSVIndexPathNode.class.isInstance(a.getResult()));
-		assertEquals(2, CSVIndexPathNode.class.cast(a.getResult()).getIndexes().size());
+        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
+		assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("0 , 1 ]");
-		assertTrue(CSVIndexPathNode.class.isInstance(a.getResult()));
-		assertEquals(2, CSVIndexPathNode.class.cast(a.getResult()).getIndexes().size());
+        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
+		assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
 		
 		
 		a = new BracketsParser(0);
 		a.consumeAll("0,1 ,2, 3, 4 ,5 ]");
-		assertTrue(CSVIndexPathNode.class.isInstance(a.getResult()));
-		assertEquals(6, CSVIndexPathNode.class.cast(a.getResult()).getIndexes().size());
+        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
+		assertEquals(6, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
 		
 		
 		
 		a = new BracketsParser(0);
 		try {
 			a.consumeAll("0,]");
-			assertTrue(false);
-		} catch (JsonPathException e) {
+            fail();
+		} catch (JsonPathException ignored) {
 		}
 		
 		a = new BracketsParser(0);
 		try {
 			a.consumeAll("0,1, ]");
-		} catch (JsonPathException e) {
+		} catch (JsonPathException ignored) {
 		}
 		
 	}
@@ -286,160 +286,160 @@ public class JsonPathTest {
 		SlicePathNode casted;
 		
 		a.consumeAll(":22]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(":21 ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+		assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(": 20 ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+		assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(": 20 ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		try {
 			a = new BracketsParser(0);
 			a.consumeAll(": 20a]");
-			assertTrue(false);
-		} catch (JsonPathException e) {
+            fail();
+		} catch (JsonPathException ignored) {
 		}
 	
 		a = new BracketsParser(0);
 		a.consumeAll("20:]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("20: ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("20 : ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		try {
 			a = new BracketsParser(0);
 			a.consumeAll("20,10: ]");
-			assertTrue(false);
-		} catch (JsonPathException e) {
+            fail();
+		} catch (JsonPathException ignored) {
 		}
 		
 		try {
 			a = new BracketsParser(0);
 			a.consumeAll("20,10 : ]");
-			assertTrue(false);
-		} catch (JsonPathException e) {
+            fail();
+		} catch (JsonPathException ignored) {
 		}
 		
 		a = new BracketsParser(0);
 		a.consumeAll("20:13:5]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == 20);
-		assertTrue(casted.getTo() == 13);
-		assertTrue(casted.getStep() == 5);
+        assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+        assertEquals(20, (int) casted.getFrom());
+        assertEquals(13, (int) casted.getTo());
+        assertEquals(5, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("20 : 13 : 5]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == 20);
-		assertTrue(casted.getTo() == 13);
-		assertTrue(casted.getStep() == 5);
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+		assertEquals(20, (int) casted.getFrom());
+		assertEquals(13, (int) casted.getTo());
+		assertEquals(5, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("20:13:5 ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == 20);
-		assertTrue(casted.getTo() == 13);
-		assertTrue(casted.getStep() == 5);
-		
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+		assertEquals(20, (int) casted.getFrom());
+		assertEquals(13, (int) casted.getTo());
+		assertEquals(5, (int) casted.getStep());
+
 		
 		// minus handling
 		a = new BracketsParser(0);
 		a.consumeAll("-20:13:2]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == -20);
-		assertTrue(casted.getTo() == 13);
-		assertTrue(casted.getStep() == 2);
+        assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+        assertEquals(-20, (int) casted.getFrom());
+        assertEquals(13, (int) casted.getTo());
+        assertEquals(2, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("20 : -13 : 3]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == 20);
-		assertTrue(casted.getTo() == -13);
-		assertTrue(casted.getStep() == 3);
-		
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+		assertEquals(20, (int) casted.getFrom());
+		assertEquals(-13, (int) casted.getTo());
+		assertEquals(3, (int) casted.getStep());
+
 		a = new BracketsParser(0);
 		a.consumeAll("20:-13:3 ]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == 20);
-		assertTrue(casted.getTo() == -13);
-		assertTrue(casted.getStep() == 3);
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+		assertEquals(20, (int) casted.getFrom());
+		assertEquals(-13, (int) casted.getTo());
+		assertEquals(3, (int) casted.getStep());
 		
 		
 		a = new BracketsParser(0);
 		a.consumeAll("-20:-13]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == -20);
-		assertTrue(casted.getTo() == -13);
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+		assertEquals(-20, (int) casted.getFrom());
+		assertEquals(-13, (int) casted.getTo());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("-20 : -13]");
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == -20);
-		assertTrue(casted.getTo() == -13);
+        assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+        assertEquals(-20, (int) casted.getFrom());
+		assertEquals(-13, (int) casted.getTo());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(":-1]"); // same as 0:-1 same as all items except last 
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+        assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(": -1]"); // same as 0:-1 same as all items except last 
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+		assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("-1:]"); // same as -1:(size) same as last item in range (from -1, first from end to end)
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
+		assertInstanceOf(SlicePathNode.class, a.getResult());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("-1 : ]"); // same as -1:(size) same as last item in range (from -1, first from end to end)
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == -1);
-		assertTrue(casted.getStep() == 1);
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+        assertEquals(-1, (int) casted.getFrom());
+        assertEquals(1, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("::2]"); // same as 0:(size):2 
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getFrom() == null);
-		assertTrue(casted.getStep() == 2);
+		assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+        assertNull(casted.getFrom());
+		assertEquals(2, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(" : :  4  ]"); // same as 0:(size):4
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
-		assertTrue(casted.getStep() == 4);
+        assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
+        assertEquals(4, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
 		a.consumeAll("::]"); // same as 0:(size):1
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
+        assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
 		assertEquals(1, casted.getStep().intValue());
 		
 		a = new BracketsParser(0);
 		a.consumeAll(" : : ]"); // same as 0:(size):1
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
+        assertInstanceOf(SlicePathNode.class, a.getResult());
+		casted = (SlicePathNode) a.getResult();
 		assertEquals(1, casted.getStep().intValue());
 	}
 	

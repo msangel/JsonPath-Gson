@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import net.sinistersky.j2ee.support.JsonPath2.Expression;
-import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
+import net.sinistersky.j2ee.support.JsonPath.Expression;
+import net.sinistersky.j2ee.support.JsonPath.NamedPropertyPathNode;
+import net.sinistersky.j2ee.support.JsonPath.RecursiveDescentPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
-import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
 
 public class Parser {
 

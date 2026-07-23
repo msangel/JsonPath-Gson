@@ -2,7 +2,6 @@ package net.sinistersky.j2ee.support.iterators;
 
 import java.util.ArrayList;
 import java.util.ListIterator;
-import static net.sinistersky.j2ee.support.JsonPath2.getStackOffset;
 
 public class ArrayListPeekableIterator<T> extends PeekableIterator<T>{
 

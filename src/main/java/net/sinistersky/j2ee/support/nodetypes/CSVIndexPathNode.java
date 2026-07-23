@@ -69,17 +69,15 @@ public class CSVIndexPathNode  implements PathNode{
 		
 	}
 	
-	private Iterator<Integer> iterator;
 	private LinkedList<Integer> indexes;
 	
 	public CSVIndexPathNode(LinkedList<Integer> indexes) {
 		this.indexes = indexes;
-		iterator = indexes.iterator();
 	}
 	public PeekableIterator<JsonElement> filter(JsonElement parent) {
 		if(parent.isJsonArray()){
 			JsonArray array = parent.getAsJsonArray();
-			return new CSVIndexIterator(iterator, array);
+			return new CSVIndexIterator(indexes.iterator(), array);
 		} else {
 			return EMPTY_ITERATOR;
 		}

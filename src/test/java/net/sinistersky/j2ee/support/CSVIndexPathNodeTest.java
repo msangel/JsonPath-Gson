@@ -15,7 +15,7 @@ public class CSVIndexPathNodeTest {
 	public void test_indexes() {
 		String data = "[1,2,3,4,5,6,7,8,9,10]";
 		Object[][] cases = {
-				{"$[1, 2,3]", },
+					{"$[1, 2,3]", 2},
 		};
 		
 		Parser parser = new Parser();

@@ -3,7 +3,7 @@ package net.sinistersky.j2ee.support;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.sinistersky.j2ee.support.JsonPath2.Expression;
+import net.sinistersky.j2ee.support.JsonPath.Expression;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
 import net.sinistersky.j2ee.support.nodetypes.*;
 import org.junit.jupiter.api.Test;
@@ -208,7 +208,8 @@ public class JsonPathTest {
 		new Parser().parseExpression(str);
 		});
 	}
-	
+
+	@Test
 	public void test_brecket_parser_wildcard(){
 		BracketsParser a = new BracketsParser(0);
 		a.consumeAll("*]");

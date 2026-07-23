@@ -1,7 +1,6 @@
 package net.sinistersky.j2ee.support.iterators;
 
-import net.sinistersky.j2ee.support.JsonPath2;
-import net.sinistersky.j2ee.support.JsonPath2.Expression;
+import net.sinistersky.j2ee.support.JsonPath.Expression;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 
 import com.google.gson.JsonElement;
@@ -16,14 +15,14 @@ import com.google.gson.JsonElement;
  */
 public class ExecIterator extends PeekableIterator<JsonElement> {
 
-	private final JsonPath2.Expression expression;
+	private final Expression expression;
 	private final PeekableIterator<JsonElement> in;
 	private final int filterPosition;
 	private PeekableIterator<JsonElement> current;
 	private JsonElement next = null;
 	private boolean isNextTaken = false;
 
-	public ExecIterator(JsonPath2.Expression expression, PeekableIterator<JsonElement> in, int filterPosition) {
+	public ExecIterator(Expression expression, PeekableIterator<JsonElement> in, int filterPosition) {
 		this.expression = expression;
 		this.in = in;
 		this.filterPosition = filterPosition;

@@ -4,14 +4,14 @@ package net.sinistersky.j2ee.support;
 import java.util.Date;
 import java.util.LinkedList;
 
-import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
+import net.sinistersky.j2ee.support.JsonPath.ArrayIndexPathNode;
+import net.sinistersky.j2ee.support.JsonPath.NamedPropertyPathNode;
+import net.sinistersky.j2ee.support.JsonPath.WildcardPathNode;
 import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
-import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
-import net.sinistersky.j2ee.support.nodetypes.WildcardPathNode;
 
-import static net.sinistersky.j2ee.support.JsonPath2.*;
+import static net.sinistersky.j2ee.support.JsonPath.*;
 public class BracketsParser {
 	enum BracketsState {
 		inBegining,
@@ -138,7 +138,7 @@ if(Character.isWhitespace(ss)){
  				storedNumbers.setFirst(null);
  				state = BracketsState.inNumberRangeAfterFirstColon;
 			} else {
-				throw new UnsupportedOperationException();
+				throw new JsonPathException("invalid content at:"+position+" position: symbol:["+ss+"]");
 			}
 			break;
 		case inBracketsAreNumber:
@@ -300,7 +300,7 @@ if(Character.isWhitespace(ss)){
 			} else if(Character.isWhitespace(ss)){
  				// ignore whitespace in brackets that is not in plain string 
 			} else {
-				throw new UnsupportedOperationException("invalid content at:"+position+" position: symbol:["+ss+"]");
+			throw new JsonPathException("invalid content at:"+position+" position: symbol:["+ss+"]");
 			}
 			break;
 		case inPlaneString:

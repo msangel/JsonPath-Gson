@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import net.sinistersky.j2ee.support.iterators.ArrayListPeekableIterator;
 import net.sinistersky.j2ee.support.iterators.ExecIterator;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
+import net.sinistersky.j2ee.support.nodetypes.PathNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,14 +16,14 @@ public class JsonPath {
 
 	static public class Expression {
 
-		final List<net.sinistersky.j2ee.support.nodetypes.PathNode> nodes;
+		final List<PathNode> nodes;
 
-		public Expression(List<net.sinistersky.j2ee.support.nodetypes.PathNode> nodes) {
+		public Expression(List<PathNode> nodes) {
 			this.nodes = nodes;
 		}
 
 		@SuppressWarnings("unchecked")
-		public <T extends net.sinistersky.j2ee.support.nodetypes.PathNode> List<T> getNodes() {
+		public <T extends PathNode> List<T> getNodes() {
 			return (List<T>) nodes;
 		}
 

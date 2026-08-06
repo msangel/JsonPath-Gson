@@ -18,7 +18,7 @@ class LegacyJsonPathTest {
     @Test
     void parsesDottedBracketedAndRecursivePathNodes() {
         JsonPath parser = new JsonPath();
-        JsonPath.Expression bracketedExpression = parser.parseExpression("$.store['book'][0]");
+        Expression bracketedExpression = parser.parseExpression("$.store['book'][0]");
 
         List<PathNode> bracketedNodes = bracketedExpression.getNodes();
 
@@ -27,7 +27,7 @@ class LegacyJsonPathTest {
         assertInstanceOf(NamedPropertyPathNode.class, bracketedNodes.get(1));
         assertInstanceOf(ArrayIndexPathNode.class, bracketedNodes.get(2));
 
-        JsonPath.Expression recursiveExpression = parser.parseExpression("$.store.book..title");
+        Expression recursiveExpression = parser.parseExpression("$.store.book..title");
         List<PathNode> recursiveNodes = recursiveExpression.getNodes();
 
         assertEquals(4, recursiveNodes.size());
@@ -40,7 +40,7 @@ class LegacyJsonPathTest {
     @Test
     void executesPropertyIndexAndWildcardSelections() {
         String json = "{'store':{'book':[{'title':'A','price':8},{'title':'B','price':12}]}}";
-        JsonPath.Expression expression = new JsonPath()
+        Expression expression = new JsonPath()
                 .parseExpression("$.store.book[*].title");
 
         List<JsonElement> titles = expression.exec(json);
@@ -53,7 +53,7 @@ class LegacyJsonPathTest {
     @Test
     void wildcardReturnsObjectValuesInInsertionOrder() {
         String json = "{'meta':{'first':1,'second':2}}";
-        JsonPath.Expression expression = new JsonPath().parseExpression("$.meta[*]");
+        Expression expression = new JsonPath().parseExpression("$.meta[*]");
 
         List<JsonElement> values = expression.exec(json);
 
@@ -65,7 +65,7 @@ class LegacyJsonPathTest {
     @Test
     void recursiveDescentFindsNestedProperties() {
         String json = "{'root':{'title':'top','children':[{'title':'leaf'},{'name':'skip'}]}}";
-        JsonPath.Expression expression = new JsonPath().parseExpression("$..title");
+        Expression expression = new JsonPath().parseExpression("$..title");
 
         List<JsonElement> titles = expression.exec(json);
 
@@ -77,7 +77,7 @@ class LegacyJsonPathTest {
     @Test
     void quotedPropertyNamesCanContainEscapedQuotesAndBackslashes() {
         String json = "{'a':{'it\\'s\\\\ok':42}}";
-        JsonPath.Expression expression = new JsonPath()
+        Expression expression = new JsonPath()
                 .parseExpression("$.a['it\\'s\\\\ok']");
 
         List<JsonElement> values = expression.exec(json);

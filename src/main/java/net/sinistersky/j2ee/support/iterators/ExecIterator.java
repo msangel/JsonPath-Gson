@@ -1,6 +1,6 @@
 package net.sinistersky.j2ee.support.iterators;
 
-import net.sinistersky.j2ee.support.JsonPath.Expression;
+import net.sinistersky.j2ee.support.Expression;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 
 import com.google.gson.JsonElement;

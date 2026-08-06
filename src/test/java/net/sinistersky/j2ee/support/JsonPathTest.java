@@ -3,7 +3,6 @@ package net.sinistersky.j2ee.support;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.sinistersky.j2ee.support.JsonPath.Expression;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
 import net.sinistersky.j2ee.support.nodetypes.*;
 import org.junit.jupiter.api.Test;

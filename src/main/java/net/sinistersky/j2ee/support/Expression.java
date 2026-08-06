@@ -18,9 +18,8 @@ public class Expression {
         this.nodes = nodes;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends PathNode> List<T> getNodes() {
-        return (List<T>) nodes;
+    public List<PathNode> getNodes() {
+        return nodes;
     }
 
     List<JsonElement> exec(String strJson) {
@@ -30,8 +29,7 @@ public class Expression {
     List<JsonElement> exec(JsonElement obj) {
         ArrayList<JsonElement> list = new ArrayList<>();
         list.add(obj);
-        int filterPosition = 0;
-        PeekableIterator<JsonElement> iterator = exec(new ArrayListPeekableIterator<>(list), filterPosition);
+        PeekableIterator<JsonElement> iterator = exec(new ArrayListPeekableIterator<>(list));
         List<JsonElement> res = new ArrayList<>();
         while (iterator.hasNext()) {
             res.add(iterator.next());
@@ -39,7 +37,7 @@ public class Expression {
         return res;
     }
 
-    PeekableIterator<JsonElement> exec(final PeekableIterator<JsonElement> in, final int filterPosition) {
-        return new ExecIterator(this, in, filterPosition);
+    PeekableIterator<JsonElement> exec(final PeekableIterator<JsonElement> in) {
+        return new ExecIterator(this, in, 0);
     }
 }

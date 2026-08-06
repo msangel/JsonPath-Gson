@@ -3,9 +3,6 @@ package net.sinistersky.j2ee.support;
 
 import java.util.List;
 
-import net.sinistersky.j2ee.support.Parser;
-
-
 import com.google.gson.JsonElement;
 import org.junit.jupiter.api.Test;
 
@@ -28,14 +25,14 @@ public class ArrayIndexPathNodeTest {
 		};
 		
 		Parser parser = new Parser();
-		for (int i = 0; i < cases.length; i++) {
-			List<JsonElement> res = parser.parseExpression(""+cases[i][0]).exec(data);
-			if(res.isEmpty()){
-				assertNull(cases[i][1]);
-			} else {
-				assertEquals(Integer.valueOf(""+cases[i][1]).intValue(), res.get(0).getAsInt());				
-			}
-		}
+        for (Object[] aCase : cases) {
+            List<JsonElement> res = parser.parseExpression("" + aCase[0]).exec(data);
+            if (res.isEmpty()) {
+                assertNull(aCase[1]);
+            } else {
+                assertEquals(Integer.valueOf("" + aCase[1]).intValue(), res.get(0).getAsInt());
+            }
+        }
 		
 		
 	}

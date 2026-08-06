@@ -39,7 +39,7 @@ public class BracketsParser {
 	/**
 	 * Used as storage both for es4 slice operator and for CSV.
 	 */
-	private class NumberStorage extends LinkedList<Integer>{
+	private static class NumberStorage extends LinkedList<Integer>{
 		private static final long serialVersionUID = 1L;
 		
 		private boolean firstWasSetted = false;
@@ -93,7 +93,7 @@ public class BracketsParser {
 		}
 		
 	}
-	private NumberStorage storedNumbers = new NumberStorage();
+	private final NumberStorage storedNumbers = new NumberStorage();
 	/*
 if(Character.isWhitespace(ss)){
 				// skip
@@ -155,7 +155,7 @@ if(Character.isWhitespace(ss)){
 					state = BracketsState.afterNumberAfterComma;
 					storeNumber(number);
 				} else if(ss == ':'){
-					if(storedNumbers.size()==0){ // first number
+					if(storedNumbers.isEmpty()){ // first number
 						storedNumbers.setFirst(number);
 						state = BracketsState.inNumberRangeAfterFirstColon;
 					} else {
@@ -332,7 +332,7 @@ if(Character.isWhitespace(ss)){
 	}
 
 	private PathNode getFromStoredNumbres() {
-		if(storedNumbers.size()==0){
+		if(storedNumbers.isEmpty()){
 			throw new JsonPathException("in java SDK shuld be ImpossibleException (as RuntimeException)");
 		} else if(storedNumbers.size()==1){
 			Integer index = storedNumbers.get(0);
@@ -399,8 +399,8 @@ $.price..
 		SlicePathNode casted;
 
 		a.consumeAll(" : :  4  ]"); // same as 0:(size):4
-		assertTrue(SlicePathNode.class.isInstance(a.getResult()));
-		casted = SlicePathNode.class.cast(a.getResult());
+		assertTrue(a.getResult() instanceof SlicePathNode);
+		casted = (SlicePathNode) a.getResult();
 		assertTrue(casted.getStep() == 4);
 		
 		System.out.println("ok");

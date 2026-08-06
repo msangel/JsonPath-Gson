@@ -13,8 +13,8 @@ public class CSVIndexPathNode  implements PathNode{
 	
 	private static class CSVIndexIterator extends PeekableIterator<JsonElement>{
 		
-		private Iterator<Integer> iterator;
-		private JsonArray parent;
+		private final Iterator<Integer> iterator;
+		private final JsonArray parent;
 		private boolean nextIsTaken = false;
 		private JsonElement next = null; 
 
@@ -69,7 +69,7 @@ public class CSVIndexPathNode  implements PathNode{
 		
 	}
 	
-	private LinkedList<Integer> indexes;
+	private final LinkedList<Integer> indexes;
 	
 	public CSVIndexPathNode(LinkedList<Integer> indexes) {
 		this.indexes = indexes;

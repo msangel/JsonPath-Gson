@@ -2,7 +2,7 @@ package net.sinistersky.j2ee.support.iterators;
 
 public class OneItemIterator<T> extends PeekableIterator<T>{
 
-	private T element;
+	private final T element;
 	boolean isTaken = false;
 
 	public OneItemIterator(T element) {

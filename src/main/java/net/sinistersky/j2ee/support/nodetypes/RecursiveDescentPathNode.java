@@ -10,13 +10,13 @@ public class RecursiveDescentPathNode implements PathNode{
 	private static class DescentPathIterator extends  PeekableIterator<JsonElement>{
 
 
-		private WildcardIterator iterator;
+		private final WildcardIterator iterator;
 		private boolean wasFirst = false;
-		private JsonElement parent;
+		private final JsonElement parent;
 		private DescentPathIterator stored;
 		private boolean nextWasTaken = false;
 		private JsonElement next;
-		private boolean needIncludeRoot;
+		private final boolean needIncludeRoot;
 
 		public DescentPathIterator(JsonElement parent, boolean needIncludeRoot) {
 			this.needIncludeRoot = needIncludeRoot;

@@ -14,7 +14,7 @@ public class WildcardIterator extends PeekableIterator<JsonElement>{
 
 	private static class WildcardObjectIterator extends PeekableIterator<JsonElement>{
 
-		private Iterator<Entry<String, JsonElement>> iterator;
+		private final Iterator<Entry<String, JsonElement>> iterator;
 		private boolean isNextTaken;
 		private JsonElement next;
 
@@ -59,7 +59,7 @@ public class WildcardIterator extends PeekableIterator<JsonElement>{
 	
 	private static class WildcardArrayIterator extends PeekableIterator<JsonElement>{
 
-		private JsonArray parent;
+		private final JsonArray parent;
 		private int arrIndex;
 
 		public WildcardArrayIterator(JsonArray parent) {
@@ -88,7 +88,7 @@ public class WildcardIterator extends PeekableIterator<JsonElement>{
 		
 	}
 	
-	private PeekableIterator<JsonElement> iterator;
+	private final PeekableIterator<JsonElement> iterator;
 
 	public WildcardIterator(JsonElement parent) {
 		if(parent.isJsonArray()){

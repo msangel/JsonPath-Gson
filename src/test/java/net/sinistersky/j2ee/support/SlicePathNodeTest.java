@@ -12,13 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SlicePathNodeTest {
 	
-	SlicePathNode node = null;
-
 	@Test
 	public void test_RangeIndexPathNode_can_not_have_zero_step() {
-		assertThrows(JsonPathException.class, () -> {
-		new SlicePathNode(0, 10, 0);
-		});
+		assertThrows(JsonPathException.class, () -> new SlicePathNode(0, 10, 0));
 
 	}
 	
@@ -65,25 +61,19 @@ public class SlicePathNodeTest {
 		process_data(json, cases);
 	}
 
-	/**
-	 * 
-	 * @param json
-	 * @param cases - array of arrays {expression, result count, value of first(optional - use null)
-	 */
 	private void process_data(String json, Object[][] cases) {
 		Parser parser = new Parser();
-		for (int i = 0; i < cases.length; i++) {
-			Object[] data = cases[i];
-			if(data.length<2){
-				continue;
-			}
-			// System.out.println(data[0].toString());
-			List<JsonElement> nodes = parser.parseExpression(data[0].toString()).exec(json);
-			assertEquals(Integer.valueOf(data[1].toString()).intValue(), nodes.size());
-			if(nodes.size()>0 && data.length>2 && data[2]!=null){
-				assertEquals(Integer.valueOf(data[2].toString()).intValue(), nodes.get(0).getAsInt());				
-			}
-		}
+        for (Object[] data : cases) {
+            if (data.length < 2) {
+                continue;
+            }
+            // System.out.println(data[0].toString());
+            List<JsonElement> nodes = parser.parseExpression(data[0].toString()).exec(json);
+            assertEquals(Integer.valueOf(data[1].toString()).intValue(), nodes.size());
+            if (!nodes.isEmpty() && data.length > 2 && data[2] != null) {
+                assertEquals(Integer.valueOf(data[2].toString()).intValue(), nodes.get(0).getAsInt());
+            }
+        }
 	} 
 	
 	@Test

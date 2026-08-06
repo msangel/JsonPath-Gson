@@ -5,15 +5,14 @@ import java.util.ListIterator;
 
 public class ArrayListPeekableIterator<T> extends PeekableIterator<T>{
 
-	private ListIterator<T> iter;
+	private final ListIterator<T> iter;
 
 	public ArrayListPeekableIterator(ArrayList<T> in) {
 		this.iter = in.listIterator();
 	}
 	
 	public boolean hasNext() {
-		boolean hasNext = iter.hasNext();
-		return hasNext;
+        return iter.hasNext();
 	}
 
 	public T next() {

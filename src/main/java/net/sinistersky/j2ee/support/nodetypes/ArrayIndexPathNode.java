@@ -1,6 +1,5 @@
 package net.sinistersky.j2ee.support.nodetypes;
 
-import net.sinistersky.j2ee.support.JsonPathException;
 import net.sinistersky.j2ee.support.iterators.OneItemIterator;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
 
@@ -22,10 +21,10 @@ public class ArrayIndexPathNode implements PathNode{
 			int size = parentArr.size();
 			if(index>=0 && index<size){
 				JsonElement element = parentArr.get(index);
-				return new OneItemIterator<JsonElement>(element);
+				return new OneItemIterator<>(element);
 			} else if(index<0 && Math.abs(index)<=size){
 				JsonElement element = parentArr.get(size+index);// so [0..size)
-				return new OneItemIterator<JsonElement>(element);
+				return new OneItemIterator<>(element);
 			}
 		}
 		return EMPTY_ITERATOR;

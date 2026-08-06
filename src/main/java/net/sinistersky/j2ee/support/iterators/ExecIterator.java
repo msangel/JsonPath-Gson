@@ -6,11 +6,10 @@ import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import com.google.gson.JsonElement;
 
 /**
- * This iterator recursively iterate over JSON tree and evaluate appropriate expression part for each node.
- * All nodes, that match to whole expression is accessible via iterator.
- * This class is a part of GsonPath library(<a href="https://github.com/msangel/JsonPath-Gson">https://github.com/msangel/JsonPath-Gson</a>)<br/>.
- * License:  Apache License 2.0 
- * @author msangel &lt;h6.msangel@gmail.com&gt; 
+ * This iterator recursively iterates over the JSON tree and evaluates the appropriate
+ * expression part for each node.
+ * All nodes that match to the whole expression are accessible via iterator.
+ * @author Vasyl Khrystiuk
  *
  */
 public class ExecIterator extends PeekableIterator<JsonElement> {

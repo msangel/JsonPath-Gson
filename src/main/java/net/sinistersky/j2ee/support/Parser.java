@@ -18,10 +18,10 @@ public class Parser {
 	
 	Expression parseExpression(String str) throws JsonPathException{
 
-		if(str==null){
+		if(str==null) {
 			throw new JsonPathException("null input");
 		}
-		if(str.length()==0){
+		if(str.isEmpty()) {
 			throw new JsonPathException("empty string");
 		}
 		if(Character.isWhitespace(str.charAt(0)) || Character.isWhitespace(str.charAt(str.length()-1))){
@@ -33,10 +33,10 @@ public class Parser {
 		char ss;
 		StringBuilder buf = new StringBuilder();
 		// List <String> res = new ArrayList<String>();
-		List <PathNode> res = new ArrayList<PathNode>();
+		List <PathNode> res = new ArrayList<>();
 		
 		int length = str.length()-1;
-		Stack<ReaderStates> stack = new Stack<ReaderStates>();
+		Stack<ReaderStates> stack = new Stack<>();
 		
 		int sequentialDotsCount = 0;
 		
@@ -64,7 +64,7 @@ public class Parser {
 					} else if(sequentialDotsCount>1){ 
 						throw new JsonPathException("invalid expression syntax: no than two dots in a row at:"+i+" position)");
 					} else {
-						if(buf.toString().length()>0){// avoid empty property on start
+						if(!buf.toString().isEmpty()){// avoid empty property on start
 							res.add(new NamedPropertyPathNode(buf.toString()));
 							buf = new StringBuilder();
 						}

@@ -21,8 +21,8 @@ public class SlicePathNode implements PathNode{
 		private int startIndex;
 		private int endIndex;
 		private int position;
-		private int step;
-		private JsonArray arr;
+		private final int step;
+		private final JsonArray arr;
 		
 		/**
 		 * no requested indexes in arr - nothing to return;
@@ -41,18 +41,10 @@ public class SlicePathNode implements PathNode{
 			if(isOutOfRange){
 				return false;
 			}
-			if(step>0){
-				if(position+step<endIndex){
-					return true;
-				} else {
-					return false;
-				}
+			if (step > 0) {
+                return position + step < endIndex;
 			} else {
-				if(position+step>endIndex){
-					return true;
-				} else {
-					return false;
-				}
+                return position + step > endIndex;
 			}
 		}
 
@@ -61,8 +53,7 @@ public class SlicePathNode implements PathNode{
 				return null; // TODO: or NoSuchElementException ?
 			}
 			position = position + step;
-			JsonElement el = arr.get(position);
-			return el;
+            return arr.get(position);
 		}
 
 		@Override
@@ -187,7 +178,7 @@ if from>to :
 		this.to = to;
 		
 		if(step!=null){
-			if (step.intValue() == 0){
+			if (step == 0){
 				throw new JsonPathException("step can not be 0");
 			}
 			this.step = step;

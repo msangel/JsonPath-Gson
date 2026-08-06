@@ -7,7 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class NamedPropertyPathNode implements PathNode{
-	private String name;
+	private final String name;
 
 	public NamedPropertyPathNode(String name) {
 		this.name = name;
@@ -18,7 +18,7 @@ public class NamedPropertyPathNode implements PathNode{
 			JsonObject parentObj = parent.getAsJsonObject();
 			if(parentObj.has(name)){
 				JsonElement element = parentObj.get(name);
-				return new OneItemIterator<JsonElement>(element);
+				return new OneItemIterator<>(element);
 			}
 		}
 		return EMPTY_ITERATOR;

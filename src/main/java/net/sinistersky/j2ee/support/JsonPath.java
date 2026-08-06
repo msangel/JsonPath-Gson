@@ -11,43 +11,7 @@ import java.util.List;
 
 public class JsonPath {
 
-	public interface PathNode extends net.sinistersky.j2ee.support.nodetypes.PathNode {
-	}
 
-	public static class NamedPropertyPathNode
-			extends net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode
-			implements PathNode {
-		public NamedPropertyPathNode(String name) {
-			super(name);
-		}
-	}
-
-	public static class ArrayIndexPathNode
-			extends net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode
-			implements PathNode {
-		public ArrayIndexPathNode(int index) {
-			super(index);
-		}
-	}
-
-	public static class WildcardPathNode
-			extends net.sinistersky.j2ee.support.nodetypes.WildcardPathNode
-			implements PathNode {
-	}
-
-	public static class RecursiveDescentPathNode
-			extends net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode
-			implements PathNode {
-	}
-
-	public static class JsonPathException extends net.sinistersky.j2ee.support.JsonPathException {
-		private static final long serialVersionUID = 1L;
-
-		public JsonPathException(net.sinistersky.j2ee.support.JsonPathException cause) {
-			super(cause.getMessage());
-			initCause(cause);
-		}
-	}
 
 	static public class Expression {
 
@@ -84,10 +48,6 @@ public class JsonPath {
 	}
 
 	Expression parseExpression(String str) throws JsonPathException {
-		try {
-			return new Parser().parseExpression(str);
-		} catch (net.sinistersky.j2ee.support.JsonPathException e) {
-			throw new JsonPathException(e);
-		}
+		return new Parser().parseExpression(str);
 	}
 }

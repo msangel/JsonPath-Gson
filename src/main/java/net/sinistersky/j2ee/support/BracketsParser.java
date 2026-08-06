@@ -3,12 +3,7 @@ package net.sinistersky.j2ee.support;
 
 import java.util.LinkedList;
 
-import net.sinistersky.j2ee.support.JsonPath.ArrayIndexPathNode;
-import net.sinistersky.j2ee.support.JsonPath.NamedPropertyPathNode;
-import net.sinistersky.j2ee.support.JsonPath.WildcardPathNode;
-import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
-import net.sinistersky.j2ee.support.nodetypes.PathNode;
-import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
+import net.sinistersky.j2ee.support.nodetypes.*;
 
 public class BracketsParser {
 	enum BracketsState {
@@ -128,7 +123,7 @@ if(Character.isWhitespace(ss)){
  				buf = new StringBuilder();
 				buf.append(ss); // keep this first digit
 				state = BracketsState.inBracketsAreNumber;
- 			} else if(Character.isWhitespace(ss)){
+ 			} else if(Character.isWhitespace(ss)) {
  				// ignore whitespace in brackets that is not in plain string 
  			} else if('*' == ss){
  				result = new WildcardPathNode();

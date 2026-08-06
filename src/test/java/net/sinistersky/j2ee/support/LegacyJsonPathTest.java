@@ -1,6 +1,10 @@
 package net.sinistersky.j2ee.support;
 
 import com.google.gson.JsonElement;
+import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
+import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
+import net.sinistersky.j2ee.support.nodetypes.PathNode;
+import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,21 +20,21 @@ class LegacyJsonPathTest {
         JsonPath parser = new JsonPath();
         JsonPath.Expression bracketedExpression = parser.parseExpression("$.store['book'][0]");
 
-        List<JsonPath.PathNode> bracketedNodes = bracketedExpression.getNodes();
+        List<PathNode> bracketedNodes = bracketedExpression.getNodes();
 
         assertEquals(3, bracketedNodes.size());
-        assertInstanceOf(JsonPath.NamedPropertyPathNode.class, bracketedNodes.get(0));
-        assertInstanceOf(JsonPath.NamedPropertyPathNode.class, bracketedNodes.get(1));
-        assertInstanceOf(JsonPath.ArrayIndexPathNode.class, bracketedNodes.get(2));
+        assertInstanceOf(NamedPropertyPathNode.class, bracketedNodes.get(0));
+        assertInstanceOf(NamedPropertyPathNode.class, bracketedNodes.get(1));
+        assertInstanceOf(ArrayIndexPathNode.class, bracketedNodes.get(2));
 
         JsonPath.Expression recursiveExpression = parser.parseExpression("$.store.book..title");
-        List<JsonPath.PathNode> recursiveNodes = recursiveExpression.getNodes();
+        List<PathNode> recursiveNodes = recursiveExpression.getNodes();
 
         assertEquals(4, recursiveNodes.size());
-        assertInstanceOf(JsonPath.NamedPropertyPathNode.class, recursiveNodes.get(0));
-        assertInstanceOf(JsonPath.NamedPropertyPathNode.class, recursiveNodes.get(1));
-        assertInstanceOf(JsonPath.RecursiveDescentPathNode.class, recursiveNodes.get(2));
-        assertInstanceOf(JsonPath.NamedPropertyPathNode.class, recursiveNodes.get(3));
+        assertInstanceOf(NamedPropertyPathNode.class, recursiveNodes.get(0));
+        assertInstanceOf(NamedPropertyPathNode.class, recursiveNodes.get(1));
+        assertInstanceOf(RecursiveDescentPathNode.class, recursiveNodes.get(2));
+        assertInstanceOf(NamedPropertyPathNode.class, recursiveNodes.get(3));
     }
 
     @Test
@@ -86,13 +90,13 @@ class LegacyJsonPathTest {
     void rejectsInvalidExpressions() {
         JsonPath parser = new JsonPath();
 
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression(null));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression(""));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression(" $.a"));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression("a.b"));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression("$"));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression("$.a b"));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression("$.a['b' 0]"));
-        assertThrows(JsonPath.JsonPathException.class, () -> parser.parseExpression("$.a['b'"));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression(null));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression(""));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression(" $.a"));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression("a.b"));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression("$"));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression("$.a b"));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression("$.a['b' 0]"));
+        assertThrows(JsonPathException.class, () -> parser.parseExpression("$.a['b'"));
     }
 }

@@ -5,17 +5,16 @@ import java.util.List;
 import java.util.Stack;
 
 import net.sinistersky.j2ee.support.JsonPath.Expression;
-import net.sinistersky.j2ee.support.JsonPath.NamedPropertyPathNode;
-import net.sinistersky.j2ee.support.JsonPath.RecursiveDescentPathNode;
+import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
+import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
 
 public class Parser {
 
 	enum ReaderStates{
 		inSquareBrackets, rightAfterSquareBrackets
 	}
-	
-	
+
 	Expression parseExpression(String str) throws JsonPathException{
 
 		if(str==null) {
@@ -26,13 +25,13 @@ public class Parser {
 		}
 		if(Character.isWhitespace(str.charAt(0)) || Character.isWhitespace(str.charAt(str.length()-1))){
 			throw new JsonPathException("input string should be trimmed");
-			// trimming inside will break offsets and information about other errors will be incorrect
+			// trimming inside will break offsets,
+			// and information about other errors will be incorrect
 		}
 
 		// create a new scanner with the specified String Object
 		char ss;
 		StringBuilder buf = new StringBuilder();
-		// List <String> res = new ArrayList<String>();
 		List <PathNode> res = new ArrayList<>();
 		
 		int length = str.length()-1;

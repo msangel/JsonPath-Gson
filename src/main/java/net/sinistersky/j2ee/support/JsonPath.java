@@ -43,10 +43,6 @@ public class JsonPath {
 	public static class JsonPathException extends net.sinistersky.j2ee.support.JsonPathException {
 		private static final long serialVersionUID = 1L;
 
-		public JsonPathException(String message) {
-			super(message);
-		}
-
 		public JsonPathException(net.sinistersky.j2ee.support.JsonPathException cause) {
 			super(cause.getMessage());
 			initCause(cause);
@@ -71,11 +67,11 @@ public class JsonPath {
 		}
 
 		List<JsonElement> exec(JsonElement obj) {
-			ArrayList<JsonElement> list = new ArrayList<JsonElement>();
+			ArrayList<JsonElement> list = new ArrayList<>();
 			list.add(obj);
 			int filterPosition = 0;
-			PeekableIterator<JsonElement> iterator = exec(new ArrayListPeekableIterator<JsonElement>(list), filterPosition);
-			List<JsonElement> res = new ArrayList<JsonElement>();
+			PeekableIterator<JsonElement> iterator = exec(new ArrayListPeekableIterator<>(list), filterPosition);
+			List<JsonElement> res = new ArrayList<>();
 			while (iterator.hasNext()) {
 				res.add(iterator.next());
 			}
@@ -93,28 +89,5 @@ public class JsonPath {
 		} catch (net.sinistersky.j2ee.support.JsonPathException e) {
 			throw new JsonPathException(e);
 		}
-	}
-
-	public static void assertEquals(Object a, Object b) {
-		if ((a == null && b != null) || !a.equals(b)) {
-			throw new RuntimeException("<" + a + "> is not same as <" + b + ">");
-		}
-	}
-
-	public static void assertTrue(Boolean a) {
-		if (a == null) {
-			throw new RuntimeException("null is not same as True");
-		}
-		if (!a.booleanValue()) {
-			throw new RuntimeException("<" + a + "> is not True");
-		}
-	}
-
-	public static String getStackOffset() {
-		StringBuilder sb = new StringBuilder();
-		for (int i = 6; i < Thread.currentThread().getStackTrace().length; i++) {
-			sb.append("\t");
-		}
-		return sb.toString();
 	}
 }

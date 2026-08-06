@@ -425,12 +425,6 @@ public class JsonPathTest {
 		assertEquals(2, (int) casted.getStep());
 		
 		a = new BracketsParser(0);
-		a.consumeAll(" : :  4  ]"); // same as 0:(size):4
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-		casted = (SlicePathNode) a.getResult();
-        assertEquals(4, (int) casted.getStep());
-		
-		a = new BracketsParser(0);
 		a.consumeAll("::]"); // same as 0:(size):1
         assertInstanceOf(SlicePathNode.class, a.getResult());
 		casted = (SlicePathNode) a.getResult();
@@ -441,6 +435,17 @@ public class JsonPathTest {
         assertInstanceOf(SlicePathNode.class, a.getResult());
 		casted = (SlicePathNode) a.getResult();
 		assertEquals(1, casted.getStep().intValue());
+	}
+
+	@Test
+	public void test_range_with_omitted_bounds_and_explicit_step(){
+		BracketsParser parser = new BracketsParser(0);
+		parser.consumeAll(" : :  4  ]"); // same as 0:(size):4
+
+		SlicePathNode result = assertInstanceOf(SlicePathNode.class, parser.getResult());
+		assertNull(result.getFrom());
+		assertNull(result.getTo());
+		assertEquals(4, result.getStep().intValue());
 	}
 	
 	@Test

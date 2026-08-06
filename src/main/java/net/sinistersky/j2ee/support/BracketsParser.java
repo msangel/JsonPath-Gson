@@ -1,7 +1,6 @@
 package net.sinistersky.j2ee.support;
 
 
-import java.util.Date;
 import java.util.LinkedList;
 
 import net.sinistersky.j2ee.support.JsonPath.ArrayIndexPathNode;
@@ -11,7 +10,6 @@ import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
 
-import static net.sinistersky.j2ee.support.JsonPath.*;
 public class BracketsParser {
 	enum BracketsState {
 		inBegining,
@@ -364,45 +362,4 @@ if(Character.isWhitespace(ss)){
 		return null;
 	}
 	
-	
-	@SuppressWarnings("deprecation")
-	public static void main(String[] args) {
-/*
- * 
-ref:
-
-http://goessner.net/articles/JsonPath/
-http://wiki.ecmascript.org/doku.php?id=proposals:slice_syntax&s=array+slice 
-
-cases:
-
-
-[(@.length-1)]
-[-1:]
-
-[?(@.isbn)]
-[?(@.price<10)]
-['a', 'b'] 
-
-$..* - all
-
-?:
-
-$..
-$.price..
-
-
-*/
-		System.out.println(new Date().getHours()+":"+new Date().getMinutes());
-	
-		BracketsParser a = new BracketsParser(0);
-		SlicePathNode casted;
-
-		a.consumeAll(" : :  4  ]"); // same as 0:(size):4
-		assertTrue(a.getResult() instanceof SlicePathNode);
-		casted = (SlicePathNode) a.getResult();
-		assertTrue(casted.getStep() == 4);
-		
-		System.out.println("ok");
-	}
 }

@@ -29,14 +29,14 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
 	}
 
 	public boolean hasNext() {
-		if(current!=null){ // if have current iterator - delegate checking to it
+		if (current!=null) { // if have current iterator - delegate checking to it
 			return current.hasNext();
 		}
-		if(!isNextTaken){
+		if (!isNextTaken) {
 			this.next = takeNext();
 			isNextTaken = true;
 		}
-		return !(next==null);
+		return next != null;
 	}
 	
 
@@ -85,7 +85,7 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
 				// 1) no items - skip this case and trying to get item from next iteration  
 				// 2) one item - return it
 				// 3) few items - save 'current' iterator for accession other items in this iterator for the next time.
-				ExecIterator iter = new ExecIterator(this.expression, filtered, filterPosition+1);
+				ExecIterator iter = new ExecIterator(this.expression, filtered, filterPosition + 1);
 				if(iter.hasNext()){
 					JsonElement returned = iter.next();
 					if(iter.hasNext()){ // few items

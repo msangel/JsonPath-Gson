@@ -22,14 +22,14 @@ public class Expression {
         return nodes;
     }
 
-    List<JsonElement> exec(String strJson) {
+    public List<JsonElement> exec(String strJson) {
         return exec(JsonParser.parseString(strJson));
     }
 
-    List<JsonElement> exec(JsonElement obj) {
+    public List<JsonElement> exec(JsonElement obj) {
         ArrayList<JsonElement> list = new ArrayList<>();
         list.add(obj);
-        PeekableIterator<JsonElement> iterator = exec(new ArrayListPeekableIterator<>(list));
+        PeekableIterator<JsonElement> iterator = new ExecIterator(this, new ArrayListPeekableIterator<>(list), 0);
         List<JsonElement> res = new ArrayList<>();
         while (iterator.hasNext()) {
             res.add(iterator.next());
@@ -37,7 +37,4 @@ public class Expression {
         return res;
     }
 
-    PeekableIterator<JsonElement> exec(final PeekableIterator<JsonElement> in) {
-        return new ExecIterator(this, in, 0);
-    }
 }

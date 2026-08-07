@@ -28,6 +28,14 @@ class Parser {
             // and information about other errors will be incorrect
         }
 
+        if(str.charAt(0) != '$'){
+            throw new JsonPathException("input string should start from '$' sign"); // i don't like this, but i left this for compatibility with sta
+        }
+        if(str.length()<2){
+            throw new JsonPathException("input string is to short");
+        }
+
+
         // create a new scanner with the specified String Object
         char ss;
         StringBuilder buf = new StringBuilder();
@@ -37,13 +45,6 @@ class Parser {
         Stack<ReaderStates> stack = new Stack<>();
 
         int sequentialDotsCount = 0;
-
-        if(str.charAt(0) != '$'){
-            throw new JsonPathException("input string should start from '$' sign"); // i don't like this, but i left this for compatibility with sta
-        }
-        if(str.length()<2){
-            throw new JsonPathException("input string is to short");
-        }
 
         BracketsParser brParser = null;
         for (int i = 1; i <= length; i++) {

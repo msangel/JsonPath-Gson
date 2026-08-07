@@ -10,107 +10,107 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class WildcardIterator extends PeekableIterator<JsonElement>{
-	
 
-	private static class WildcardObjectIterator extends PeekableIterator<JsonElement>{
 
-		private final Iterator<Entry<String, JsonElement>> iterator;
-		private boolean isNextTaken;
-		private JsonElement next;
+    private static class WildcardObjectIterator extends PeekableIterator<JsonElement>{
 
-		public WildcardObjectIterator(JsonObject parent) {
-			this.iterator = parent.entrySet().iterator();
-		}
+        private final Iterator<Entry<String, JsonElement>> iterator;
+        private boolean isNextTaken;
+        private JsonElement next;
 
-		public boolean hasNext() {
-			if(!isNextTaken){
-				isNextTaken = true;
-				next = takeNext();
-			}
-			return next!=null;
-		}
+        public WildcardObjectIterator(JsonObject parent) {
+            this.iterator = parent.entrySet().iterator();
+        }
 
-		public JsonElement next() {
-			if(!isNextTaken){
-				next = takeNext();
-			} else {
-				isNextTaken = false;				
-			}
-			return next;
-		}
+        public boolean hasNext() {
+            if(!isNextTaken){
+                isNextTaken = true;
+                next = takeNext();
+            }
+            return next!=null;
+        }
 
-		@Override
-		public JsonElement peek() {
-			if(!isNextTaken){
-				isNextTaken = true;
-				next = takeNext();
-			}
-			return next;
-		}
-		
-		private JsonElement takeNext(){
-			if(iterator.hasNext()){
-				return iterator.next().getValue(); 
-			}
-			return null;
-		}
-		
-	}
-	
-	private static class WildcardArrayIterator extends PeekableIterator<JsonElement>{
+        public JsonElement next() {
+            if(!isNextTaken){
+                next = takeNext();
+            } else {
+                isNextTaken = false;
+            }
+            return next;
+        }
 
-		private final JsonArray parent;
-		private int arrIndex;
+        @Override
+        public JsonElement peek() {
+            if(!isNextTaken){
+                isNextTaken = true;
+                next = takeNext();
+            }
+            return next;
+        }
 
-		public WildcardArrayIterator(JsonArray parent) {
-			this.parent = parent;
-			this.arrIndex = 0;
-		}
+        private JsonElement takeNext(){
+            if(iterator.hasNext()){
+                return iterator.next().getValue();
+            }
+            return null;
+        }
 
-		public boolean hasNext() {
-			return parent.size()>arrIndex;
-		}
+    }
 
-		public JsonElement next() {
-			if(parent.size()>arrIndex){
-				return parent.get(arrIndex++); 
-			}
-			return null;
-		}
+    private static class WildcardArrayIterator extends PeekableIterator<JsonElement>{
 
-		@Override
-		public JsonElement peek() {
-			if(parent.size()>arrIndex){
-				return parent.get(arrIndex); 
-			}
-			return null;
-		}
-		
-	}
-	
-	private final PeekableIterator<JsonElement> iterator;
+        private final JsonArray parent;
+        private int arrIndex;
 
-	public WildcardIterator(JsonElement parent) {
-		if(parent.isJsonArray()){
-			this.iterator = new WildcardArrayIterator(parent.getAsJsonArray()); 
-		} else if (parent.isJsonObject()){
-			this.iterator = new WildcardObjectIterator(parent.getAsJsonObject());
-		} else {
-			this.iterator=WildcardPathNode.EMPTY_ITERATOR;
-		}
-	}
+        public WildcardArrayIterator(JsonArray parent) {
+            this.parent = parent;
+            this.arrIndex = 0;
+        }
 
-	public boolean hasNext() {
-		return this.iterator.hasNext();
-	}
+        public boolean hasNext() {
+            return parent.size()>arrIndex;
+        }
 
-	public JsonElement next() {
-		return this.iterator.next();
-	}
+        public JsonElement next() {
+            if(parent.size()>arrIndex){
+                return parent.get(arrIndex++);
+            }
+            return null;
+        }
 
-	@Override
-	public JsonElement peek() {
-		return this.iterator.peek();
-	}
-	
+        @Override
+        public JsonElement peek() {
+            if(parent.size()>arrIndex){
+                return parent.get(arrIndex);
+            }
+            return null;
+        }
+
+    }
+
+    private final PeekableIterator<JsonElement> iterator;
+
+    public WildcardIterator(JsonElement parent) {
+        if(parent.isJsonArray()){
+            this.iterator = new WildcardArrayIterator(parent.getAsJsonArray());
+        } else if (parent.isJsonObject()){
+            this.iterator = new WildcardObjectIterator(parent.getAsJsonObject());
+        } else {
+            this.iterator=WildcardPathNode.EMPTY_ITERATOR;
+        }
+    }
+
+    public boolean hasNext() {
+        return this.iterator.hasNext();
+    }
+
+    public JsonElement next() {
+        return this.iterator.next();
+    }
+
+    @Override
+    public JsonElement peek() {
+        return this.iterator.peek();
+    }
+
 }

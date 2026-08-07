@@ -11,14 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class CSVIndexPathNodeTest {
 
-	@Test
-	public void test_indexes() {
-		String data = "[1,2,3,4,5,6,7,8,9,10]";
-		Object[][] cases = {
-					{"$[1, 2,3]", 2},
-		};
-		
-		Parser parser = new Parser();
+    @Test
+    public void test_indexes() {
+        String data = "[1,2,3,4,5,6,7,8,9,10]";
+        Object[][] cases = {
+                    {"$[1, 2,3]", 2},
+        };
+
+        Parser parser = new Parser();
         for (Object[] aCase : cases) {
             List<JsonElement> res = parser.parseExpression("" + aCase[0]).exec(data);
             if (res.isEmpty()) {
@@ -27,8 +27,8 @@ public class CSVIndexPathNodeTest {
                 assertEquals(Integer.valueOf("" + aCase[1]).intValue(), res.get(0).getAsInt());
             }
         }
-		
-		
-	}
+
+
+    }
 
 }

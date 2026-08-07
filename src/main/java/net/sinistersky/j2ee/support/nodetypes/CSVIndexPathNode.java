@@ -10,80 +10,80 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
 public class CSVIndexPathNode  implements PathNode{
-	
-	private static class CSVIndexIterator extends PeekableIterator<JsonElement>{
-		
-		private final Iterator<Integer> iterator;
-		private final JsonArray parent;
-		private boolean nextIsTaken = false;
-		private JsonElement next = null; 
 
-		public CSVIndexIterator(Iterator<Integer> iterator, JsonArray parent) {
-			this.iterator = iterator;
-			this.parent = parent;
-		}
+    private static class CSVIndexIterator extends PeekableIterator<JsonElement>{
 
-		public boolean hasNext() {
-			if(!nextIsTaken){
-				next = takeNext();
-				nextIsTaken = true;
-			}
-			return next!=null;
-		}
+        private final Iterator<Integer> iterator;
+        private final JsonArray parent;
+        private boolean nextIsTaken = false;
+        private JsonElement next = null;
 
-	
-		public JsonElement next() {
-			if(!nextIsTaken){
-				next = takeNext();
-			} else {
-				nextIsTaken = false;
-			}
-			return next;
-		}
+        public CSVIndexIterator(Iterator<Integer> iterator, JsonArray parent) {
+            this.iterator = iterator;
+            this.parent = parent;
+        }
 
-		@Override
-		public JsonElement peek() {
-			if(!nextIsTaken){
-				next = takeNext();
-				nextIsTaken = true;
-			}
-			return next;
-		}
-		
-		private JsonElement takeNext(){
-			while(iterator.hasNext()){
-				Integer index = iterator.next();
-				ArrayIndexPathNode el = new ArrayIndexPathNode(index);
-				PeekableIterator<JsonElement> iter = el.filter(parent);
-				// this iterator can contain none elements or only one
-				if(iter.hasNext()){
-					return iter.next(); 
-				} else {
-					// in sequense CAN be invalid array indexes (to big or to low)
-					// so, this value can not have element and we should iterate further
-					continue;
-				}
-			}
-			return null;
-		}
-		
-	}
-	
-	private final LinkedList<Integer> indexes;
-	
-	public CSVIndexPathNode(LinkedList<Integer> indexes) {
-		this.indexes = indexes;
-	}
-	public PeekableIterator<JsonElement> filter(JsonElement parent) {
-		if(parent.isJsonArray()){
-			JsonArray array = parent.getAsJsonArray();
-			return new CSVIndexIterator(indexes.iterator(), array);
-		} else {
-			return EMPTY_ITERATOR;
-		}
-	}
+        public boolean hasNext() {
+            if(!nextIsTaken){
+                next = takeNext();
+                nextIsTaken = true;
+            }
+            return next!=null;
+        }
 
-	public List<Integer> getIndexes() {
-		return indexes;
-	}
+
+        public JsonElement next() {
+            if(!nextIsTaken){
+                next = takeNext();
+            } else {
+                nextIsTaken = false;
+            }
+            return next;
+        }
+
+        @Override
+        public JsonElement peek() {
+            if(!nextIsTaken){
+                next = takeNext();
+                nextIsTaken = true;
+            }
+            return next;
+        }
+
+        private JsonElement takeNext(){
+            while(iterator.hasNext()){
+                Integer index = iterator.next();
+                ArrayIndexPathNode el = new ArrayIndexPathNode(index);
+                PeekableIterator<JsonElement> iter = el.filter(parent);
+                // this iterator can contain none elements or only one
+                if(iter.hasNext()){
+                    return iter.next();
+                } else {
+                    // in sequense CAN be invalid array indexes (to big or to low)
+                    // so, this value can not have element and we should iterate further
+                    continue;
+                }
+            }
+            return null;
+        }
+
+    }
+
+    private final LinkedList<Integer> indexes;
+
+    public CSVIndexPathNode(LinkedList<Integer> indexes) {
+        this.indexes = indexes;
+    }
+    public PeekableIterator<JsonElement> filter(JsonElement parent) {
+        if(parent.isJsonArray()){
+            JsonArray array = parent.getAsJsonArray();
+            return new CSVIndexIterator(indexes.iterator(), array);
+        } else {
+            return EMPTY_ITERATOR;
+        }
+    }
+
+    public List<Integer> getIndexes() {
+        return indexes;
+    }
 }

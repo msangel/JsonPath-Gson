@@ -19,10 +19,6 @@ public class ArrayListPeekableIterator<T> extends PeekableIterator<T>{
 		return iter.next();
 	}
 
-	public void remove() {
-		iter.remove();
-	}
-
 	/**
 	 * Take next item but not shift position.
 	 */

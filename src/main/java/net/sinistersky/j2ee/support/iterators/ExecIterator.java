@@ -17,6 +17,7 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
 	private final Expression expression;
 	private final PeekableIterator<JsonElement> in;
 	private final int filterPosition;
+
 	private PeekableIterator<JsonElement> current;
 	private JsonElement next = null;
 	private boolean isNextTaken = false;
@@ -49,7 +50,8 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
 	}
 
 	/** 
-	 * This function return only next or null. This function should not change {@link #isNextTaken} and {@link #next} fields.
+	 * This function returns only next or null.
+	 * This function should not change {@link #isNextTaken} and {@link #next} fields.
 	 * @return next item in iteration.
 	 */
 	private JsonElement takeNext(){
@@ -72,8 +74,7 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
 				return null;
 			}
 		}
-		
-		
+
 		PathNode pathNode = expression.getNodes().get(filterPosition);
 		
 		while (in.hasNext()){

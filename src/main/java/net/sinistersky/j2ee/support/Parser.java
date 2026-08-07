@@ -8,7 +8,7 @@ import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
 
-public class Parser {
+class Parser {
 
     enum ReaderStates{
         inSquareBrackets, rightAfterSquareBrackets

@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 import net.sinistersky.j2ee.support.nodetypes.*;
 
-public class BracketsParser {
+class BracketsParser {
     enum BracketsState {
         inBegining,
         inPlaneString,
@@ -101,7 +101,7 @@ if(Character.isWhitespace(ss)){
             }
             break;
      */
-    public BracketsParser(int startPosition) {
+    BracketsParser(int startPosition) {
         this.position = startPosition;
     }
 

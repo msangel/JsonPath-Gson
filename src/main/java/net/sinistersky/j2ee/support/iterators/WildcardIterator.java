@@ -3,6 +3,7 @@ package net.sinistersky.j2ee.support.iterators;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import lombok.RequiredArgsConstructor;
 import net.sinistersky.j2ee.support.nodetypes.WildcardPathNode;
 
 import com.google.gson.JsonArray;
@@ -57,15 +58,11 @@ public class WildcardIterator extends PeekableIterator<JsonElement>{
 
     }
 
+    @RequiredArgsConstructor
     private static class WildcardArrayIterator extends PeekableIterator<JsonElement>{
 
         private final JsonArray parent;
         private int arrIndex;
-
-        public WildcardArrayIterator(JsonArray parent) {
-            this.parent = parent;
-            this.arrIndex = 0;
-        }
 
         public boolean hasNext() {
             return parent.size()>arrIndex;

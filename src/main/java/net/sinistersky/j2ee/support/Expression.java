@@ -2,6 +2,8 @@ package net.sinistersky.j2ee.support;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.sinistersky.j2ee.support.iterators.ArrayListPeekableIterator;
 import net.sinistersky.j2ee.support.iterators.ExecIterator;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
@@ -10,17 +12,11 @@ import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
+@RequiredArgsConstructor
 public class Expression {
 
     final List<PathNode> nodes;
-
-    public Expression(List<PathNode> nodes) {
-        this.nodes = nodes;
-    }
-
-    public List<PathNode> getNodes() {
-        return nodes;
-    }
 
     public List<JsonElement> exec(String strJson) {
         return exec(JsonParser.parseString(strJson));

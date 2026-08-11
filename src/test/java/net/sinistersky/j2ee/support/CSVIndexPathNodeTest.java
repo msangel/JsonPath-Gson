@@ -1,34 +1,33 @@
 package net.sinistersky.j2ee.support;
 
-
-import com.google.gson.JsonElement;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import com.google.gson.JsonElement;
+import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
+import net.sinistersky.j2ee.support.nodetypes.PathNode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
-public class CSVIndexPathNodeTest {
+class CSVIndexPathNodeTest {
 
-    @Test
-    public void test_indexes() {
-        String data = "[1,2,3,4,5,6,7,8,9,10]";
-        Object[][] cases = {
-                    {"$[1, 2,3]", 2},
-        };
+    @ParameterizedTest(name = "{0} contains {1} indexes")
+    @CsvSource(value = {
+            "$[1,2,3]|3|2",
+            "$[1, 2,3]|3|2",
+            "$[0,1,2,3,4,5]|6|1",
+            "$[-1,0]|2|10"
+    }, delimiter = '|')
+    void parsesAndExecutesIndexLists(String path, int indexCount, int firstValue) {
+        Expression expression = new AntlrParser().parseExpression(path);
+        PathNode node = expression.getNodes().get(0);
 
-        Parser parser = new Parser();
-        for (Object[] aCase : cases) {
-            List<JsonElement> res = parser.parseExpression("" + aCase[0]).exec(data);
-            if (res.isEmpty()) {
-                assertNull(aCase[1]);
-            } else {
-                assertEquals(Integer.valueOf("" + aCase[1]).intValue(), res.get(0).getAsInt());
-            }
-        }
+        CSVIndexPathNode indexes = assertInstanceOf(CSVIndexPathNode.class, node);
+        assertEquals(indexCount, indexes.getIndexes().size());
 
-
+        List<JsonElement> result = expression.exec("[1,2,3,4,5,6,7,8,9,10]");
+        assertEquals(firstValue, result.get(0).getAsInt());
     }
-
 }

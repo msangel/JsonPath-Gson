@@ -1,27 +1,37 @@
 package net.sinistersky.j2ee.support.nodetypes;
 
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
+@Getter
+@RequiredArgsConstructor
 public class CSVIndexPathNode  implements PathNode{
 
+    private final List<Long> indexes;
+
+    public PeekableIterator<JsonElement> filter(JsonElement parent) {
+        if(parent.isJsonArray()){
+            JsonArray array = parent.getAsJsonArray();
+            return new CSVIndexIterator(indexes.iterator(), array);
+        } else {
+            return EMPTY_ITERATOR;
+        }
+    }
+
+    @RequiredArgsConstructor
     private static class CSVIndexIterator extends PeekableIterator<JsonElement>{
 
-        private final Iterator<Integer> iterator;
+        private final Iterator<Long> iterator;
         private final JsonArray parent;
         private boolean nextIsTaken = false;
         private JsonElement next = null;
-
-        public CSVIndexIterator(Iterator<Integer> iterator, JsonArray parent) {
-            this.iterator = iterator;
-            this.parent = parent;
-        }
 
         public boolean hasNext() {
             if(!nextIsTaken){
@@ -52,38 +62,16 @@ public class CSVIndexPathNode  implements PathNode{
 
         private JsonElement takeNext(){
             while(iterator.hasNext()){
-                Integer index = iterator.next();
+                Long index = iterator.next();
                 ArrayIndexPathNode el = new ArrayIndexPathNode(index);
                 PeekableIterator<JsonElement> iter = el.filter(parent);
                 // this iterator can contain none elements or only one
                 if(iter.hasNext()){
                     return iter.next();
-                } else {
-                    // in sequense CAN be invalid array indexes (to big or to low)
-                    // so, this value can not have element and we should iterate further
-                    continue;
                 }
             }
             return null;
         }
 
-    }
-
-    private final LinkedList<Integer> indexes;
-
-    public CSVIndexPathNode(LinkedList<Integer> indexes) {
-        this.indexes = indexes;
-    }
-    public PeekableIterator<JsonElement> filter(JsonElement parent) {
-        if(parent.isJsonArray()){
-            JsonArray array = parent.getAsJsonArray();
-            return new CSVIndexIterator(indexes.iterator(), array);
-        } else {
-            return EMPTY_ITERATOR;
-        }
-    }
-
-    public List<Integer> getIndexes() {
-        return indexes;
     }
 }

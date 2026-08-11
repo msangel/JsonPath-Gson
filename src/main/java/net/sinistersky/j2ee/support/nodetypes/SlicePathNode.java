@@ -1,228 +1,80 @@
 package net.sinistersky.j2ee.support.nodetypes;
 
-import net.sinistersky.j2ee.support.JsonPathException;
-import net.sinistersky.j2ee.support.iterators.PeekableIterator;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import lombok.Getter;
+import net.sinistersky.j2ee.support.iterators.PeekableIterator;
 
-public class SlicePathNode implements PathNode{
-    // http://stackoverflow.com/a/509295/449553
+public class SlicePathNode implements PathNode {
 
-    /**
-     *
-     * Note: I wrote this class according to specs and testing all behave with python,
-     * but there is a lot that i don't like.
-     *
-     */
-    private static class SliceIterator extends  PeekableIterator<JsonElement>{
+    private static final class SliceIterator extends PeekableIterator<JsonElement> {
+        private final JsonArray array;
+        private final long end;
+        private final long step;
+        private long position;
 
-
-        private int startIndex;
-        private int endIndex;
-        private int position;
-        private final int step;
-        private final JsonArray arr;
-
-        /**
-         * no requested indexes in arr - nothing to return;
-         */
-        private boolean isOutOfRange = false;
-
-        public SliceIterator(JsonArray arr, Integer from, Integer to, Integer step) {
+        private SliceIterator(JsonArray array, Long from, Long to, long step) {
+            this.array = array;
             this.step = step;
-            this.arr = arr;
-            calculatePosition(from, to);
-            validateRanges();
-            this.position = this.startIndex-this.step;// before first element
-        }
 
-        public boolean hasNext() {
-            if(isOutOfRange){
-                return false;
-            }
+            long length = array.size();
             if (step > 0) {
-                return position + step < endIndex;
+                position = clamp(normalize(from == null ? 0L : from, length), 0, length);
+                end = clamp(normalize(to == null ? length : to, length), 0, length);
             } else {
-                return position + step > endIndex;
+                position = clamp(from == null ? length - 1 : normalize(from, length),
+                        -1, length - 1);
+                end = clamp(to == null ? -1 : normalize(to, length), -1, length - 1);
             }
         }
 
+        @Override
+        public boolean hasNext() {
+            return step > 0 ? position < end : end < position;
+        }
+
+        @Override
         public JsonElement next() {
-            if(isOutOfRange){
-                return null; // TODO: or NoSuchElementException ?
+            if (!hasNext()) {
+                return null;
             }
-            position = position + step;
-            return arr.get(position);
+            JsonElement result = array.get((int) position);
+            position += step;
+            return result;
         }
 
         @Override
         public JsonElement peek() {
-            return  arr.get(position);
+            return hasNext() ? array.get((int) position) : null;
         }
 
-
-        // best documentation in this case is tests.
-        // thats all is about ranges, inclusion and slice syntax standards(from python).
-        // all that this code is doing - setting default values in ranges, if implicit is not setted another.
-        private void calculatePosition(Integer from, Integer to) {
-            if(step>0){
-
-                if(from!=null){
-
-                    if(from>=0){
-                        startIndex = from;
-                    } else {
-                        startIndex = arr.size()+from; // +(-x) == -x
-                    }
-                } else {
-                    startIndex = 0;
-                }
-
-                if(to!=null){
-
-                    if(to>=0){
-                        endIndex = to;
-                    } else {
-                        endIndex = arr.size()+to; // +(-x) == -x
-                    }
-                } else {
-                    endIndex = arr.size();
-                }
-
-            } else if (step<0){
-
-                if(from!=null){
-                    if(from>=0){
-                        startIndex = from;
-                    } else {
-                        startIndex = arr.size()+from;
-                    }
-                } else {
-                    startIndex = arr.size()-1;
-                }
-
-
-                if(to!=null){
-                    if(to>=0){
-                        endIndex = to;
-                    } else {
-                        endIndex = arr.size()+to;
-                    }
-                } else {
-                    endIndex = -1; // less then 0, excluding range
-                }
-
-            } // if 0 - constructor throw exception
+        private static long normalize(long index, long length) {
+            return index >= 0 ? index : length + index;
         }
 
-        private void validateRanges() {
-            if(step>0){
-                if(startIndex < 0){
-                    startIndex = 0;
-                } else if(startIndex>(arr.size()-1)){
-                    this.isOutOfRange = true; // start in indexes where array is ended
-                }
-
-                if(endIndex > arr.size()){
-                    endIndex = arr.size(); // exclusion
-                } else if(endIndex<0){
-                    this.isOutOfRange = true; // finish in indexes, where array is starting
-                }
-
-                if(!isOutOfRange && (startIndex > endIndex)){
-                    this.isOutOfRange = true; // if still here but startIndex > endIndex
-                }
-            } else {
-
-                if(startIndex > arr.size()-1){
-                    startIndex = arr.size()-1;
-                } else if(startIndex<0){
-                    this.isOutOfRange = true; // start in indexes, where array is not starting yet
-                }
-                if(endIndex < -1){ // exclusion
-                    endIndex = -1;
-                } else if(endIndex>(arr.size()-1)){
-                    this.isOutOfRange = true; // start in indexes where array is ended
-                }
-
-                if(!isOutOfRange && (startIndex < endIndex)){
-                    this.isOutOfRange = true; // in reverse direction startIndex should be greater of endIndex
-                }
-
-            }
+        private static long clamp(long value, long minimum, long maximum) {
+            return Math.min(Math.max(value, minimum), maximum);
         }
     }
 
+    @Getter
+    private final Long from;
+    @Getter
+    private final Long to;
+    @Getter
+    private final Long step;
 
-
-
-
-    private final Integer from;
-    private final Integer to;
-    private final Integer step;
-    private final WildcardPathNode wildcard;
-
-
-    /*
-
-http://wiki.ecmascript.org/doku.php?id=proposals:slice_syntax&s=array+slice
-https://mail.mozilla.org/pipermail/es-discuss/2007-August/004424.html
-
-if from>to :
-    The description seems to be clear here, the result should be an empty array.
-
-     */
-    public SlicePathNode(Integer from, Integer to, Integer step) {
+    public SlicePathNode(Long from, Long to, Long step) {
         this.from = from;
         this.to = to;
-
-        if(step!=null){
-            if (step == 0){
-                throw new JsonPathException("step can not be 0");
-            }
-            this.step = step;
-        } else {
-            this.step = 1;
-        }
-
-
-
-        // [::]
-        // open question should objects use this as wildcard?
-        // let it be for now
-        if(from==null && to == null && this.step == 1){
-            this.wildcard = new WildcardPathNode();
-        } else {
-            this.wildcard = null;
-        }
-
+        this.step = step == null ? 1L : step;
     }
 
+    @Override
     public PeekableIterator<JsonElement> filter(JsonElement parent) {
-        if(wildcard!=null){
-            return wildcard.filter(parent);
-        } else {
-            if(parent.isJsonArray()){
-                JsonArray arr = parent.getAsJsonArray();
-                return new SliceIterator(arr, from, to, step);
-            } else {
-                return EMPTY_ITERATOR;
-            }
+        if (!parent.isJsonArray() || step == 0) {
+            return EMPTY_ITERATOR;
         }
+        return new SliceIterator(parent.getAsJsonArray(), from, to, step);
     }
-
-
-    public Integer getFrom() {
-        return from;
-    }
-
-    public Integer getStep() {
-        return step;
-    }
-
-    public Integer getTo() {
-        return to;
-    }
-
 }

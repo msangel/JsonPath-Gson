@@ -1,498 +1,194 @@
 package net.sinistersky.j2ee.support;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
-import net.sinistersky.j2ee.support.nodetypes.*;
-import org.junit.jupiter.api.Test;
+import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
+import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
+import net.sinistersky.j2ee.support.nodetypes.PathNode;
+import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
+import net.sinistersky.j2ee.support.nodetypes.SlicePathNode;
+import net.sinistersky.j2ee.support.nodetypes.SelectorListPathNode;
+import net.sinistersky.j2ee.support.nodetypes.WildcardPathNode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.ArrayList;
-import java.util.List;
+class JsonPathTest {
 
-import static org.junit.jupiter.api.Assertions.*;
+    private final AntlrParser parser = new AntlrParser();
 
-public class JsonPathTest {
-
-    @Test
-    public void test_parse_expressions(){
-        String str = "$.aasas['.asd adsf adsf .asd asdf. asdf'].b.s.bb.c[1][2]['asas[2].hg'][0]";
-        Parser jpath = new Parser();
-        Expression expression = new Parser().parseExpression(str);
-        assertEquals(10, expression.getNodes().size());
-
-        str = "$.qwe.rty";
-        List<PathNode> nodes = jpath.parseExpression(str).getNodes();
-        assertEquals(2, nodes.size());
-
-        str = "$.c['asas[2].hg']['0']['1\\'s\\\\ds\\ds']"; // java needs to double "\\" when inserting "\"
-        assertEquals(4, jpath.parseExpression(str).getNodes().size());
-
-        str = "$.s['1'][0]['d']";
-        assertEquals(4, jpath.parseExpression(str).getNodes().size());
-
-        str = "$['1']";
-        assertEquals(1, jpath.parseExpression(str).getNodes().size());
-
-        str = "$['1'][ 0]['d'].s.a[56 ].d['f']";
-        nodes = jpath.parseExpression(str).getNodes();
-        assertEquals(8, nodes.size());
-        assertEquals("\"a\"", ""+nodes.get(4));
-        assertEquals(""+56, ""+nodes.get(5));
-        assertEquals("\"d\"", ""+nodes.get(6));
+    @ParameterizedTest(name = "{0} has {1} nodes")
+    @CsvSource(value = {
+            "$|0",
+            "$.aasas['.asd adsf adsf .asd asdf. asdf'].b.s.bb.c[1][2]['asas[2].hg'][0]|10",
+            "$.qwe.rty|2",
+            "$.c['asas[2].hg']['0']['1\\'s\\\\ds']|4",
+            "$.s['1'][0]['d']|4",
+            "$['1']|1",
+            "$['1'][ 0]['d'].s.a[56 ].d['f']|8",
+            "$.[0].[0]|2",
+            "$.a['b']['c']|3",
+            "$.c..v[1].d|5"
+    }, delimiter = '|')
+    void parsesExpressions(String path, int expectedNodeCount) {
+        assertEquals(expectedNodeCount, parser.parseExpression(path).getNodes().size());
     }
 
-    @Test
-    public void test_get_all_in_array(){
-        String json = "[5,2,3,4]";
-        Expression expression = new Parser().parseExpression("$[*]");
-        List<JsonElement> nodes = expression.exec(json);
-        assertEquals(4, nodes.size());
-        assertEquals(5, nodes.get(0).getAsInt());
-        assertEquals(2, nodes.get(1).getAsInt());
-        assertEquals(3, nodes.get(2).getAsInt());
-        assertEquals(4, nodes.get(3).getAsInt());
-
-
-        json = "{'c':{'a':'d', 'c': 'e'}}";
-        expression = new Parser().parseExpression("$.c[ * ]");// wrong! or not? :)
-        assertEquals(2, expression.getNodes().size());
-        nodes = expression.exec(json);
-        assertEquals("\"d\"", ""+nodes.get(0));
-        assertEquals("\"e\"", ""+nodes.get(1));
-
-        List<JsonElement> elements;
-
-        json = "{'c':[{'v':5},{'v':51},{'v':52},{'v': 'lold'}]}";
-        expression = new Parser().parseExpression("$.c[*].v");
-        elements = expression.exec(json);
-
-        assertEquals(4, elements.size());
-        assertEquals(5, elements.get(0).getAsInt());
-        assertEquals(51, elements.get(1).getAsInt());
-        assertEquals(52, elements.get(2).getAsInt());
-        assertEquals("lold", elements.get(3).getAsString());
-
-
-
-
-
-        json = "{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d': 777}}]}";
-        expression = new Parser().parseExpression("$.c[*].v.d");
-        elements = expression.exec(json);
-        assertEquals(1, elements.size());
-        assertEquals(777, elements.get(0).getAsInt());
-
-        json = "{'c':[{'v':5},{'v':{'d':{'x':'lol', 'c':2}}},{'v':52},{'v':{'d': [1,3,4]}}]}";
-        expression = new Parser().parseExpression("$.c[*].v.d[*]");
-        elements = expression.exec(json);
-        assertEquals(5, elements.size());
-        assertEquals("lol", elements.get(0).getAsString());
-        assertEquals(4, elements.get(4).getAsInt());
+    @ParameterizedTest(name = "node {1} of {0} is {2}")
+    @CsvSource(value = {
+            "$['1'][0]['d'].s.a[56].d['f']|4|\"a\"",
+            "$['1'][0]['d'].s.a[56].d['f']|5|56",
+            "$['1'][0]['d'].s.a[56].d['f']|6|\"d\""
+    }, delimiter = '|')
+    void rendersParsedNodes(String path, int nodeIndex, String expected) {
+        assertEquals(expected, parser.parseExpression(path).getNodes().get(nodeIndex).toString());
     }
 
-    @Test
-    public void test_recursive_elemets_path_node_filter(){
-        String json = "{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d': 777}}]}";
-        RecursiveDescentPathNode node = new  RecursiveDescentPathNode();
-        PeekableIterator<JsonElement> list = node.filter(JsonParser.parseString(json));
-        ArrayList<JsonElement> res = new ArrayList<>();
-        while(list.hasNext()){
-            res.add(list.next());
+    @ParameterizedTest(name = "executes {1}")
+    @MethodSource("executionCases")
+    void executesExpressions(String json, String path, String expectedValues) {
+        List<JsonElement> result = parser.parseExpression(path).exec(json);
+
+        assertEquals(expectedValues, joinValues(result));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d':777}}]}"})
+    void recursiveDescentNodeFiltersDescendants(String json) {
+        PeekableIterator<JsonElement> iterator =
+                new RecursiveDescentPathNode().filter(JsonParser.parseString(json));
+        List<JsonElement> result = drain(iterator);
+
+        assertEquals(11, result.size());
+        assertEquals(JsonParser.parseString(json), result.get(0));
+        assertEquals(5, result.get(3).getAsInt());
+        assertEquals(777, result.get(10).getAsInt());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{'a':'b','c':'d','e':{},'f':{'g':'h'},'i':{'j':'k','l':'m'},"
+                    + "'n':{'o':'p','q':{'r':'s','t':['y',{'v':'w','x':{'y':'z'}}]},'aa':'ab'}}"
+    })
+    void recursiveDescentIteratorKeepsTraversalOrder(String json) {
+        PeekableIterator<JsonElement> iterator =
+                new RecursiveDescentPathNode().filter(JsonParser.parseString(json));
+
+        assertEquals(JsonParser.parseString(json), iterator.next());
+        assertEquals("b", iterator.next().getAsString());
+        assertEquals("d", iterator.next().getAsString());
+        assertTrue(iterator.next().getAsJsonObject().entrySet().isEmpty());
+        assertEquals("h", iterator.next().getAsJsonObject().get("g").getAsString());
+        assertEquals("h", iterator.next().getAsString());
+        assertEquals("m", iterator.next().getAsJsonObject().get("l").getAsString());
+        assertEquals("k", iterator.next().getAsString());
+        assertEquals("m", iterator.next().getAsString());
+        assertEquals("p", iterator.next().getAsJsonObject().get("o").getAsString());
+        assertEquals("p", iterator.next().getAsString());
+        assertEquals(9, drain(iterator).size());
+    }
+
+    @ParameterizedTest(name = "{0} creates {1}")
+    @MethodSource("selectorCases")
+    void parsesBracketSelectors(String path, Class<?> expectedType, int expectedIndexCount) {
+        PathNode node = parser.parseExpression(path).getNodes().get(0);
+
+        assertInstanceOf(expectedType, node);
+        if (expectedIndexCount >= 0) {
+            assertEquals(expectedIndexCount, ((CSVIndexPathNode) node).getIndexes().size());
         }
-        assertEquals(10, res.size());
-
-        assertEquals(5, res.get(2).getAsInt());
-        assertEquals(777, res.get(9).getAsInt());
     }
 
-
-    @Test
-    public void test_recursive_elements_expression(){
-        String json = "{'c':[{'v':5},{'v':51},{'v':52},{'c':{'v': 777}}], 'v':1}";
-        Expression expression = new Parser().parseExpression("$.c..v");
-
-        List<JsonElement> elements = expression.exec(json);
-
-        assertEquals(4, elements.size());
-        assertEquals(5, elements.get(0).getAsInt());
-        assertEquals(51, elements.get(1).getAsInt());
-        assertEquals(52, elements.get(2).getAsInt());
-        assertEquals(777, elements.get(3).getAsInt());
-
-        json = "{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d': 777}}]}";
-        expression = new Parser().parseExpression("$..v");
-        elements = expression.exec(json);
-
-        assertEquals(4, elements.size());
-
-        expression = new Parser().parseExpression("$.c..v[1].d");
-        assertEquals(5, expression.getNodes().size());
+    @ParameterizedTest(name = "rejects {0}")
+    @ValueSource(strings = {
+            "$.a[]",
+            "$.a[   ]",
+            "$.a[   ].d",
+            "$[0,]",
+            "$[0,1,]",
+            "$[:20a]",
+            "$[0:2,]"
+    })
+    void rejectsInvalidSelectors(String path) {
+        assertThrows(JsonPathException.class, () -> parser.parseExpression(path));
     }
 
-    @Test
-    public void test_descent_path_iterator(){
-        RecursiveDescentPathNode node = new RecursiveDescentPathNode();
-        PeekableIterator<JsonElement> test = node.filter(JsonParser.parseString("{" +
-                "'a':'b', " +
-                "'c':'d', " +
-                "'e':{}, " +
-                "'f':{'g':'h'}, " +
-                "'i':{'j':'k', 'l':'m'}, " +
-                "'n':{'o':'p', 'q':{'r':'s', 't':['y', {'v':'w', 'x':{'y':'z'}}]}, 'aa':'ab'}" +
-                "}"));
-        assertEquals("b", test.next().getAsJsonPrimitive().getAsString()); // "b"
-        assertEquals("d", test.next().getAsJsonPrimitive().getAsString()); // "d"
-        assertTrue(test.next().getAsJsonObject().entrySet().isEmpty()); // {}
-        assertEquals("h", test.next().getAsJsonObject().get("g").getAsString()); // {"g":"h"}
-        assertEquals("h", test.next().getAsJsonPrimitive().getAsString()); // "h"
-        assertEquals("m", test.next().getAsJsonObject().get("l").getAsString()); // {"j":"k","l":"m"}
-        assertEquals("k", test.next().getAsJsonPrimitive().getAsString()); // "k"
-        assertEquals("m", test.next().getAsJsonPrimitive().getAsString()); // "m"
-        assertEquals("p", test.next().getAsJsonObject().get("o").getAsString()); // {"o":"p","q":{"r":"s","t":["y",{"v":"w","x":{"y":"z"}}]},"aa":"ab"}
-        assertEquals("p", test.next().getAsJsonPrimitive().getAsString()); // "p"
-        /*
-{"r":"s","t":["y",{"v":"w","x":{"y":"z"}}]}
-"s"
-["y",{"v":"w","x":{"y":"z"}}]
-"y"
-{"v":"w","x":{"y":"z"}}
-"w"
-{"y":"z"}
-"z"
-"ab"
-         */
-        ArrayList<JsonElement> list = new ArrayList<>();
-        while (test.hasNext()){
-            list.add(test.next());
+    private static Stream<Arguments> executionCases() {
+        return Stream.of(
+                Arguments.of("{'root':{'value':42}}", "$", "{\"root\":{\"value\":42}}"),
+                Arguments.of("{'корінь':{'ключ':'значення'}}",
+                        "$.корінь.ключ", "значення"),
+                Arguments.of("{'title':'top','child':{'title':'leaf'}}",
+                        "$..title", "top,leaf"),
+                Arguments.of("{'title':'top','child':{'name':'leaf'}}",
+                        "$..['title','name']", "top,leaf"),
+                Arguments.of("[[1,2],[3,4]]", "$..[0]", "[1,2],1,3"),
+                Arguments.of("[{'a':1},2]", "$..[*]", "{\"a\":1},2,1"),
+                Arguments.of("['a','b','c','d','e','f']", "$[0:2,5]", "a,b,f"),
+                Arguments.of("[5,2,3,4]", "$[*]", "5,2,3,4"),
+                Arguments.of("{'c':{'a':'d','c':'e'}}", "$.c[ * ]", "d,e"),
+                Arguments.of("{'c':[{'v':5},{'v':51},{'v':52},{'v':'lold'}]}",
+                        "$.c[*].v", "5,51,52,lold"),
+                Arguments.of("{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d':777}}]}",
+                        "$.c[*].v.d", "777"),
+                Arguments.of("{'c':[{'v':5},{'v':{'d':{'x':'lol','c':2}}},{'v':52},"
+                                + "{'v':{'d':[1,3,4]}}]}",
+                        "$.c[*].v.d[*]", "lol,2,1,3,4"),
+                Arguments.of("{'c':[{'v':5},{'v':51},{'v':52},{'c':{'v':777}}],'v':1}",
+                        "$.c..v", "5,51,52,777"),
+                Arguments.of("{'c':[{'v':5},{'v':51},{'v':52},{'v':{'d':777}}]}",
+                        "$..v", "5,51,52,{\"d\":777}"));
+    }
+
+    private static Stream<Arguments> selectorCases() {
+        return Stream.of(
+                Arguments.of("$[*]", WildcardPathNode.class, -1),
+                Arguments.of("$[ * ]", WildcardPathNode.class, -1),
+                Arguments.of("$[0]", ArrayIndexPathNode.class, -1),
+                Arguments.of("$[0 ]", ArrayIndexPathNode.class, -1),
+                Arguments.of("$[0,1]", CSVIndexPathNode.class, 2),
+                Arguments.of("$[0, 1 ]", CSVIndexPathNode.class, 2),
+                Arguments.of("$[0,1,2,3,4,5]", CSVIndexPathNode.class, 6),
+                Arguments.of("$[0:2,5]", SelectorListPathNode.class, -1),
+                Arguments.of("$['a','b']", SelectorListPathNode.class, -1),
+                Arguments.of("$[*,*]", SelectorListPathNode.class, -1),
+                Arguments.of("$[:22]", SlicePathNode.class, -1),
+                Arguments.of("$[20:13:5]", SlicePathNode.class, -1),
+                Arguments.of("$[ : : 4 ]", SlicePathNode.class, -1));
+    }
+
+    private static List<JsonElement> drain(PeekableIterator<JsonElement> iterator) {
+        List<JsonElement> result = new ArrayList<>();
+        while (iterator.hasNext()) {
+            result.add(iterator.next());
         }
-        assertEquals(9, list.size());
+        return result;
     }
 
-    @Test
-    public void test_dot_after_brecket(){
-        String str = "$.[0].[0]";
-        Expression expression = new Parser().parseExpression(str);
-
-        assertEquals(2, expression.getNodes().size());
-
-        str = "$.a['b']['c']";
-        expression = new Parser().parseExpression(str);
-        assertEquals(3, expression.getNodes().size());
-    }
-
-    @Test
-    public void test_invalid_content_exception(){
-        assertThrows(JsonPathException.class, () -> {
-        String str = "$.a[]";
-        new Parser().parseExpression(str);
-        });
-
-    }
-
-    @Test
-    public void test_invalid_content_exception2(){
-                assertThrows(JsonPathException.class, () -> {
-        String str = "$.a[   ]";
-        new Parser().parseExpression(str);
-        });
-
-    }
-
-    @Test
-    public void test_invalid_content_exception3(){
-                        assertThrows(JsonPathException.class, () -> {
-
-        String str = "$.a[   ].d";
-        new Parser().parseExpression(str);
-        });
-    }
-
-    @Test
-    public void test_brecket_parser_wildcard(){
-        BracketsParser a = new BracketsParser(0);
-        a.consumeAll("*]");
-        assertInstanceOf(WildcardPathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll("* ]");
-        assertInstanceOf(WildcardPathNode.class, a.getResult());
-    }
-
-    @Test
-    public void test_bracket_parser_arrs(){
-
-        BracketsParser a;
-        //
-
-        a = new BracketsParser(0);
-        a.consumeAll("0]");
-        assertInstanceOf(ArrayIndexPathNode.class, a.getResult());
-
-
-        a = new BracketsParser(0);
-        a.consumeAll("0 ]");
-        assertInstanceOf(ArrayIndexPathNode.class, a.getResult());
-
-
-        a = new BracketsParser(0);
-        a.consumeAll("0,1]");
-        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
-        assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
-
-        a = new BracketsParser(0);
-        a.consumeAll("0,1 ]");
-        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
-        assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
-
-        a = new BracketsParser(0);
-        a.consumeAll("0, 1 ]");
-        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
-        assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
-
-        a = new BracketsParser(0);
-        a.consumeAll("0 , 1 ]");
-        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
-        assertEquals(2, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
-
-
-        a = new BracketsParser(0);
-        a.consumeAll("0,1 ,2, 3, 4 ,5 ]");
-        assertInstanceOf(CSVIndexPathNode.class, a.getResult());
-        assertEquals(6, ((CSVIndexPathNode) a.getResult()).getIndexes().size());
-
-
-
-        a = new BracketsParser(0);
-        try {
-            a.consumeAll("0,]");
-            fail();
-        } catch (JsonPathException ignored) {
+    private static String joinValues(List<JsonElement> values) {
+        StringBuilder result = new StringBuilder();
+        for (JsonElement value : values) {
+            if (result.length() > 0) {
+                result.append(',');
+            }
+            if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                result.append(value.getAsString());
+            } else {
+                result.append(value);
+            }
         }
-
-        a = new BracketsParser(0);
-        try {
-            a.consumeAll("0,1, ]");
-        } catch (JsonPathException ignored) {
-        }
-
+        return result.toString();
     }
-
-
-    @Test
-    public void test_ranges(){
-        BracketsParser a = new BracketsParser(0);
-        SlicePathNode casted;
-
-        a.consumeAll(":22]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll(":21 ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll(": 20 ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll(": 20 ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        try {
-            a = new BracketsParser(0);
-            a.consumeAll(": 20a]");
-            fail();
-        } catch (JsonPathException ignored) {
-        }
-
-        a = new BracketsParser(0);
-        a.consumeAll("20:]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll("20: ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll("20 : ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        try {
-            a = new BracketsParser(0);
-            a.consumeAll("20,10: ]");
-            fail();
-        } catch (JsonPathException ignored) {
-        }
-
-        try {
-            a = new BracketsParser(0);
-            a.consumeAll("20,10 : ]");
-            fail();
-        } catch (JsonPathException ignored) {
-        }
-
-        a = new BracketsParser(0);
-        a.consumeAll("20:13:5]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(20, (int) casted.getFrom());
-        assertEquals(13, (int) casted.getTo());
-        assertEquals(5, (int) casted.getStep());
-
-        a = new BracketsParser(0);
-        a.consumeAll("20 : 13 : 5]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(20, (int) casted.getFrom());
-        assertEquals(13, (int) casted.getTo());
-        assertEquals(5, (int) casted.getStep());
-
-        a = new BracketsParser(0);
-        a.consumeAll("20:13:5 ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(20, (int) casted.getFrom());
-        assertEquals(13, (int) casted.getTo());
-        assertEquals(5, (int) casted.getStep());
-
-
-        // minus handling
-        a = new BracketsParser(0);
-        a.consumeAll("-20:13:2]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(-20, (int) casted.getFrom());
-        assertEquals(13, (int) casted.getTo());
-        assertEquals(2, (int) casted.getStep());
-
-        a = new BracketsParser(0);
-        a.consumeAll("20 : -13 : 3]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(20, (int) casted.getFrom());
-        assertEquals(-13, (int) casted.getTo());
-        assertEquals(3, (int) casted.getStep());
-
-        a = new BracketsParser(0);
-        a.consumeAll("20:-13:3 ]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(20, (int) casted.getFrom());
-        assertEquals(-13, (int) casted.getTo());
-        assertEquals(3, (int) casted.getStep());
-
-
-        a = new BracketsParser(0);
-        a.consumeAll("-20:-13]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(-20, (int) casted.getFrom());
-        assertEquals(-13, (int) casted.getTo());
-
-        a = new BracketsParser(0);
-        a.consumeAll("-20 : -13]");
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(-20, (int) casted.getFrom());
-        assertEquals(-13, (int) casted.getTo());
-
-        a = new BracketsParser(0);
-        a.consumeAll(":-1]"); // same as 0:-1 same as all items except last
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll(": -1]"); // same as 0:-1 same as all items except last
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll("-1:]"); // same as -1:(size) same as last item in range (from -1, first from end to end)
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-
-        a = new BracketsParser(0);
-        a.consumeAll("-1 : ]"); // same as -1:(size) same as last item in range (from -1, first from end to end)
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(-1, (int) casted.getFrom());
-        assertEquals(1, (int) casted.getStep());
-
-        a = new BracketsParser(0);
-        a.consumeAll("::2]"); // same as 0:(size):2
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertNull(casted.getFrom());
-        assertEquals(2, (int) casted.getStep());
-
-        a = new BracketsParser(0);
-        a.consumeAll("::]"); // same as 0:(size):1
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(1, casted.getStep().intValue());
-
-        a = new BracketsParser(0);
-        a.consumeAll(" : : ]"); // same as 0:(size):1
-        assertInstanceOf(SlicePathNode.class, a.getResult());
-        casted = (SlicePathNode) a.getResult();
-        assertEquals(1, casted.getStep().intValue());
-    }
-
-    @Test
-    public void test_range_with_omitted_bounds_and_explicit_step(){
-        BracketsParser parser = new BracketsParser(0);
-        parser.consumeAll(" : :  4  ]"); // same as 0:(size):4
-
-        SlicePathNode result = assertInstanceOf(SlicePathNode.class, parser.getResult());
-        assertNull(result.getFrom());
-        assertNull(result.getTo());
-        assertEquals(4, result.getStep().intValue());
-    }
-
-    @Test
-    public void test_wildcard_range(){
-
-        String json = "{'c':[{'v':5},{'v':51},{'v':52},{'c':{'v': 777}}]}";
-        Parser parser = new Parser();
-
-        Expression expression = parser.parseExpression("$.c[::].v");
-
-        List<JsonElement> elements = expression.exec(json);
-
-        assertEquals(3, elements.size());
-
-        assertEquals(5, elements.get(0).getAsJsonPrimitive().getAsInt());
-        assertEquals(51, elements.get(1).getAsJsonPrimitive().getAsInt());
-        assertEquals(52, elements.get(2).getAsJsonPrimitive().getAsInt());
-
-
-        json = "{'c':{'d':{'v':5},'r':{'v':51}}}";
-        expression = parser.parseExpression("$.c[ : : ].v");
-
-        elements = expression.exec(json);
-
-        assertEquals(2, elements.size());
-
-        assertEquals(5, elements.get(0).getAsJsonPrimitive().getAsInt());
-        assertEquals(51, elements.get(1).getAsJsonPrimitive().getAsInt());
-
-
-        expression = parser.parseExpression("$.c[ :  ].v");
-        elements = expression.exec(json);
-
-        assertEquals(2, elements.size());
-
-        assertEquals(5, elements.get(0).getAsJsonPrimitive().getAsInt());
-        assertEquals(51, elements.get(1).getAsJsonPrimitive().getAsInt());
-
-
-        expression = parser.parseExpression("$.c[:].v");
-        elements = expression.exec(json);
-
-        assertEquals(2, elements.size());
-
-        assertEquals(5, elements.get(0).getAsJsonPrimitive().getAsInt());
-        assertEquals(51, elements.get(1).getAsJsonPrimitive().getAsInt());
-
-
-    }
-
 }

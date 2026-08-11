@@ -1,13 +1,12 @@
 package net.sinistersky.j2ee.support.iterators;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 public class OneItemIterator<T> extends PeekableIterator<T>{
 
     private final T element;
     boolean isTaken = false;
-
-    public OneItemIterator(T element) {
-        this.element = element;
-    }
 
     public boolean hasNext() {
         return !isTaken;

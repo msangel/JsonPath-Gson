@@ -1,62 +1,116 @@
 # JsonPath-Gson
-JsonPath Gson 
 
-Read about https://en.wikipedia.org/wiki/JSONPath 
-Official document: https://www.rfc-editor.org/info/rfc9535/
+An experimental JSONPath evaluator for Gson. Queries are parsed with ANTLR and
+evaluated as a pipeline of `PathNode` iterators over `JsonElement` values.
 
-Core idea is implementing as an iterator so it allow lazy evaluation.
+The normative JSONPath specification is [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535.html).
+This project currently implements a useful subset, but **is not yet RFC 9535 conformant**.
 
+## Build and runtime
+
+- Maven wrapper: `./mvnw clean install`
+- build JDK: 11 or newer (required by the ANTLR tool)
+- produced bytecode and runtime dependencies: Java 8 compatible
+- JSON model: Gson `JsonElement`
+- test suite: JUnit parameterized tests
+
+## Evaluation model and API
+
+`AntlrParser` turns a query into an `Expression` containing executable path nodes.
+`Expression.exec(String)` and `Expression.exec(JsonElement)` return a materialized
+`List<JsonElement>`.
+
+Evaluation is iterator-based internally, but the current public execution methods
+collect every result into a list. There is no public lazy-result API yet. Also,
+`JsonPath.parseExpression` and `AntlrParser` are package-private, so the project does
+not yet expose a stable public entry point for applications outside this package.
+
+## RFC 9535 feature status
+
+| RFC feature | Status | Current behavior |
+| --- | --- | --- |
+| Root identifier | Implemented | Queries start with `$`; the root-only query `$` returns the complete input document as one result. |
+| Child name selector | Implemented | Supports RFC dot shorthand, including Unicode names such as `$.ключ` and `$.日本語`, and quoted bracket names such as `$['store']` and `$["store"]`. |
+| Quoted name escapes | Implemented | Supports every RFC escape (`\b`, `\f`, `\n`, `\r`, `\t`, `\/`, `\\`, escaped delimiters, and `\uXXXX`), validates control characters and surrogate pairs, and decodes supplementary Unicode characters. |
+| Wildcard selector | Implemented | Supports `[*]` and `.*` for arrays and objects. Gson insertion order is currently observed for objects, although RFC 9535 does not define object result order. |
+| Array index selector | Implemented | Supports the full I-JSON exact-integer range, negative indexes, and empty results for out-of-range indexes; rejects leading zeros and `-0`. |
+| Array slice selector | Implemented | Implements RFC bounds normalization, omitted bounds, positive/negative steps, reverse traversal, empty results for step `0`, and selection from arrays only. |
+| Multiple selectors in one child segment | Implemented | Names, indexes, slices, and wildcards can be freely mixed; selector order and duplicate results are preserved. Filter selectors remain unavailable as documented below. |
+| Descendant segment | Implemented | Supports `..name`, `..*`, and bracket forms such as `$..[0]`, `$..['name']`, `$..[0:2,5]`, and `$..[*]`, applying selectors to the input node and each descendant in RFC traversal order. |
+| Filter selector | Missing | No `?` filter grammar, current-node identifier `@`, comparisons, existence tests, or logical operators. |
+| Function extensions | Missing | RFC functions `length()`, `count()`, `match()`, `search()`, and `value()` are not implemented. |
+
+The RFC allows a query to contain zero or more segments, defines general
+comma-separated selector sequences, and specifies filters and standard function
+extensions. See the RFC sections for the
+[root identifier](https://www.rfc-editor.org/rfc/rfc9535.html#section-2.2),
+[selectors](https://www.rfc-editor.org/rfc/rfc9535.html#section-2.3),
+[segments](https://www.rfc-editor.org/rfc/rfc9535.html#section-2.5), and
+[functions](https://www.rfc-editor.org/rfc/rfc9535.html#section-2.4).
+
+## Accepted subset examples
+
+```text
+$
+$.store.book
+$.корінь.ключ
+$['store']["book"]
+$.store.*
+$[*]
+$[0]
+$[-1]
+$[0,2,4]
+$['book','bicycle']
+$[0:2,5]
+$[2,0:2,*]
+$[1:5]
+$[1:9:2]
+$[::-1]
+$..title
+$..*
+$..['title','name']
+$..[0]
+```
+
+These examples are accepted by the current grammar; partially implemented features
+remain subject to the semantic caveats in the table above.
+
+Missing object members and out-of-range array indexes produce no result rather than
+an exception. Wildcards operate on both arrays and object member values. Numeric
+selector lists preserve selector order and repeated matches.
+
+## RFC conformance roadmap
+
+1. Tighten whitespace and segment grammar to the RFC.
+2. Implement filters: `@`, nested root queries, existence tests, comparisons,
+   `&&`, `||`, `!`, and primitive literals.
+3. Implement the standard `length()`, `count()`, `match()`, `search()`, and `value()`
+   function extensions.
+4. Add an RFC 9535 conformance suite, including ordering, duplicate-result,
+   Unicode, normalized-path, and invalid-query cases.
+
+## API roadmap
+
+- public parse/read/compile entry points
+- reusable compiled expressions and a public lazy result iterator
+- a documented contract for definite/indefinite and missing paths
+- optional normalized-path result output
+- mapping from `JsonElement` results to Java types and generic type references
+- documented thread-safety and caching behavior
+
+## Non-standard compatibility ideas
+
+These are useful compatibility features, but they are not requirements of RFC 9535
+and should remain separate from the conformance roadmap:
+
+- Jayway-style `JsonPath.read`, read contexts, predicates, and return options such
+  as `ALWAYS_RETURN_LIST`, `DEFAULT_PATH_LEAF_TO_NULL`, and `AS_PATH_LIST`
+- Jayway operators such as `=~`, `in`, `nin`, `subsetof`, `anyof`, `noneof`,
+  `size`, and `empty`
+- aggregation and utility functions such as `min`, `max`, `avg`, `sum`, `keys`,
+  `concat`, `first`, and `last`
+- legacy script expressions such as `$[(@.length-1)]`
 
 ## Other implementations
-- For java: https://github.com/json-path/JsonPath (short overview: https://www.baeldung.com/java-json-path)
 
-## Compatibility roadmap
-
-The current implementation covers only a small JSONPath subset:
-
-- root selector `$`
-- dot child access, for example `$.store.book`
-- bracket child access with single quotes, for example `$['store']['book']`
-- array indexes, including negative indexes
-- wildcard in brackets, for example `$[*]`
-- recursive descent, for example `$..title`
-- numeric index lists, for example `$[0,2,4]`
-- array slices, for example `$[1:5:2]`
-
-To reach an acceptable baseline for the common Goessner-style JSONPath syntax, these features still need to be implemented and tested:
-
-- wildcard after dot notation: `$.store.*`
-- recursive wildcard: `$..*`
-- bracket child unions by name: `$['book','bicycle']`
-- double-quoted bracket strings: `$["store"]["book"]`
-- escaping rules for quoted bracket strings, including standard JSON string escapes
-- filter expressions: `$[?(@.isbn)]`, `$[?(@.price < 10)]`
-- script expressions in brackets: `$[(@.length-1)]`
-- current-node selector `@` inside filters and scripts
-- root references inside expressions, for example `$..book[?(@.price <= $['expensive'])]`
-- comparisons across numbers, strings, booleans, and null
-- boolean filter operators: `&&`, `||`, `!`
-- regular-expression filters, for example `$[?(@.author =~ /.*REES/i)]`
-- deterministic parse errors instead of `UnsupportedOperationException`
-- a public API for parse/read/compile operations instead of package-private methods
-- a clear return contract for missing definite and indefinite paths
-- conformance tests using the sample expressions from the original JSONPath article and RFC 9535 where applicable
-
-Jayway JsonPath compatibility is a larger goal. Features to consider after the baseline is stable:
-
-- static read API: `JsonPath.read(json, path)`
-- compiled path API and reusable read context API
-- definite vs indefinite path detection
-- configurable return behavior similar to `ALWAYS_RETURN_LIST`, `DEFAULT_PATH_LEAF_TO_NULL`, `SUPPRESS_EXCEPTIONS`, and `REQUIRE_PROPERTIES`
-- path result mode similar to `AS_PATH_LIST`
-- function support: `min()`, `max()`, `avg()`, `stddev()`, `length()`, `sum()`, `keys()`, `concat()`, `append()`, `first()`, `last()`, `index()`
-- full filter operator set: `==`, `!=`, `<`, `<=`, `>`, `>=`, `=~`, `in`, `nin`, `subsetof`, `anyof`, `noneof`, `size`, `empty`
-- placeholder predicates, for example `$[?]`, and a Java predicate API
-- criteria/filter builder API similar to Jayway's `Filter` and `Criteria`
-- mapping support from `JsonElement` results to Java types and generic type references
-- pluggable JSON providers or at least a documented Gson-only provider boundary
-- mutation operations: `set`, `add`, `put`, `replace`, and `delete`
-- path cache SPI or a simpler cache strategy for compiled expressions
-- stronger thread-safety guarantees for compiled expressions and path nodes
-
-
+- [Jayway JsonPath](https://github.com/json-path/JsonPath)

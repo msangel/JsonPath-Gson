@@ -90,7 +90,7 @@ public class RecursiveDescentPathNode implements PathNode{
     }
 
     public PeekableIterator<JsonElement> filter(JsonElement parent) {
-        return new DescentPathIterator(parent, false);
+        return new DescentPathIterator(parent, true);
     }
 
     @Override

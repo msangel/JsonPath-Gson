@@ -1,5 +1,6 @@
 package net.sinistersky.j2ee.support.iterators;
 
+import lombok.RequiredArgsConstructor;
 import net.sinistersky.j2ee.support.Expression;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 
@@ -12,6 +13,7 @@ import com.google.gson.JsonElement;
  * @author Vasyl Khrystiuk
  *
  */
+@RequiredArgsConstructor
 public class ExecIterator extends PeekableIterator<JsonElement> {
 
     private final Expression expression;
@@ -21,12 +23,6 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
     private PeekableIterator<JsonElement> current;
     private JsonElement next = null;
     private boolean isNextTaken = false;
-
-    public ExecIterator(Expression expression, PeekableIterator<JsonElement> in, int filterPosition) {
-        this.expression = expression;
-        this.in = in;
-        this.filterPosition = filterPosition;
-    }
 
     public boolean hasNext() {
         if (current!=null) { // if have current iterator - delegate checking to it

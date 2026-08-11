@@ -1,102 +1,98 @@
 package net.sinistersky.j2ee.support;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+import java.util.stream.Stream;
+
 import com.google.gson.JsonElement;
 import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
 import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class LegacyJsonPathTest {
 
-    @Test
-    void parsesDottedBracketedAndRecursivePathNodes() {
-        JsonPath parser = new JsonPath();
-        Expression bracketedExpression = parser.parseExpression("$.store['book'][0]");
+    @ParameterizedTest(name = "parses {0}")
+    @MethodSource("pathNodeCases")
+    void parsesPathNodes(String path, Class<?>[] expectedTypes) {
+        List<PathNode> nodes = new JsonPath().parseExpression(path).getNodes();
 
-        List<PathNode> bracketedNodes = bracketedExpression.getNodes();
-
-        assertEquals(3, bracketedNodes.size());
-        assertInstanceOf(NamedPropertyPathNode.class, bracketedNodes.get(0));
-        assertInstanceOf(NamedPropertyPathNode.class, bracketedNodes.get(1));
-        assertInstanceOf(ArrayIndexPathNode.class, bracketedNodes.get(2));
-
-        Expression recursiveExpression = parser.parseExpression("$.store.book..title");
-        List<PathNode> recursiveNodes = recursiveExpression.getNodes();
-
-        assertEquals(4, recursiveNodes.size());
-        assertInstanceOf(NamedPropertyPathNode.class, recursiveNodes.get(0));
-        assertInstanceOf(NamedPropertyPathNode.class, recursiveNodes.get(1));
-        assertInstanceOf(RecursiveDescentPathNode.class, recursiveNodes.get(2));
-        assertInstanceOf(NamedPropertyPathNode.class, recursiveNodes.get(3));
+        assertEquals(expectedTypes.length, nodes.size());
+        for (int index = 0; index < expectedTypes.length; index++) {
+            assertInstanceOf(expectedTypes[index], nodes.get(index));
+        }
     }
 
-    @Test
-    void executesPropertyIndexAndWildcardSelections() {
-        String json = "{'store':{'book':[{'title':'A','price':8},{'title':'B','price':12}]}}";
-        Expression expression = new JsonPath()
-                .parseExpression("$.store.book[*].title");
+    @ParameterizedTest(name = "executes {1}")
+    @MethodSource("executionCases")
+    void executesSelections(String json, String path, String expectedValues) {
+        List<JsonElement> values = new JsonPath().parseExpression(path).exec(json);
 
-        List<JsonElement> titles = expression.exec(json);
-
-        assertEquals(2, titles.size());
-        assertEquals("A", titles.get(0).getAsString());
-        assertEquals("B", titles.get(1).getAsString());
+        assertEquals(expectedValues, joinValues(values));
     }
 
-    @Test
-    void wildcardReturnsObjectValuesInInsertionOrder() {
-        String json = "{'meta':{'first':1,'second':2}}";
-        Expression expression = new JsonPath().parseExpression("$.meta[*]");
-
-        List<JsonElement> values = expression.exec(json);
-
-        assertEquals(2, values.size());
-        assertEquals(1, values.get(0).getAsInt());
-        assertEquals(2, values.get(1).getAsInt());
+    @ParameterizedTest(name = "rejects [{0}]")
+    @MethodSource("invalidExpressions")
+    void rejectsInvalidExpressions(String path) {
+        assertThrows(JsonPathException.class, () -> new JsonPath().parseExpression(path));
     }
 
-    @Test
-    void recursiveDescentFindsNestedProperties() {
-        String json = "{'root':{'title':'top','children':[{'title':'leaf'},{'name':'skip'}]}}";
-        Expression expression = new JsonPath().parseExpression("$..title");
-
-        List<JsonElement> titles = expression.exec(json);
-
-        assertEquals(2, titles.size());
-        assertEquals("top", titles.get(0).getAsString());
-        assertEquals("leaf", titles.get(1).getAsString());
+    private static Stream<Arguments> pathNodeCases() {
+        return Stream.of(
+                Arguments.of("$", new Class<?>[0]),
+                Arguments.of("$.store['book'][0]", new Class<?>[] {
+                        NamedPropertyPathNode.class,
+                        NamedPropertyPathNode.class,
+                        ArrayIndexPathNode.class
+                }),
+                Arguments.of("$.store.book..title", new Class<?>[] {
+                        NamedPropertyPathNode.class,
+                        NamedPropertyPathNode.class,
+                        RecursiveDescentPathNode.class,
+                        NamedPropertyPathNode.class
+                }));
     }
 
-    @Test
-    void quotedPropertyNamesCanContainEscapedQuotesAndBackslashes() {
-        String json = "{'a':{'it\\'s\\\\ok':42}}";
-        Expression expression = new JsonPath()
-                .parseExpression("$.a['it\\'s\\\\ok']");
-
-        List<JsonElement> values = expression.exec(json);
-
-        assertEquals(1, values.size());
-        assertEquals(42, values.get(0).getAsInt());
+    private static Stream<Arguments> executionCases() {
+        return Stream.of(
+                Arguments.of("{'root':[1,2,3]}", "$", "{\"root\":[1,2,3]}"),
+                Arguments.of("{'store':{'book':[{'title':'A','price':8},{'title':'B','price':12}]}}",
+                        "$.store.book[*].title", "A,B"),
+                Arguments.of("{'meta':{'first':1,'second':2}}", "$.meta[*]", "1,2"),
+                Arguments.of("{'root':{'title':'top','children':[{'title':'leaf'},{'name':'skip'}]}}",
+                        "$..title", "top,leaf"),
+                Arguments.of("{'a':{'it\\'s\\\\ok':42}}", "$.a['it\\'s\\\\ok']", "42"));
     }
 
-    @Test
-    void rejectsInvalidExpressions() {
-        JsonPath parser = new JsonPath();
+    private static Stream<Arguments> invalidExpressions() {
+        return Stream.of(
+                Arguments.of((String) null),
+                Arguments.of(""),
+                Arguments.of(" $.a"),
+                Arguments.of("a.b"),
+                Arguments.of("$.a b"),
+                Arguments.of("$.a['b' 0]"),
+                Arguments.of("$.a['b'"));
+    }
 
-        assertThrows(JsonPathException.class, () -> parser.parseExpression(null));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression(""));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression(" $.a"));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression("a.b"));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression("$"));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression("$.a b"));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression("$.a['b' 0]"));
-        assertThrows(JsonPathException.class, () -> parser.parseExpression("$.a['b'"));
+    private static String joinValues(List<JsonElement> values) {
+        StringBuilder result = new StringBuilder();
+        for (JsonElement value : values) {
+            if (result.length() > 0) {
+                result.append(',');
+            }
+            if (value.isJsonPrimitive()) {
+                result.append(value.getAsString());
+            } else {
+                result.append(value);
+            }
+        }
+        return result.toString();
     }
 }

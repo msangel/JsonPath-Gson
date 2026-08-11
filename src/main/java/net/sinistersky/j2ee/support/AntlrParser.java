@@ -164,7 +164,7 @@ class AntlrParser {
         }
 
         private static SlicePathNode createSlice(SliceSelectorContext context) {
-            String[] parts = context.getText().split(":", -1);
+            String[] parts = context.getText().replaceAll("[ \\t\\r\\n]", "").split(":", -1);
             Long from = parseOptionalInteger(parts[0]);
             Long to = parseOptionalInteger(parts[1]);
             Long step = parts.length == 3 ? parseOptionalInteger(parts[2]) : null;

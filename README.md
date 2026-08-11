@@ -4,7 +4,10 @@ An experimental JSONPath evaluator for Gson. Queries are parsed with ANTLR and
 evaluated as a pipeline of `PathNode` iterators over `JsonElement` values.
 
 The normative JSONPath specification is [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535.html).
-This project currently implements a useful subset, but **is not yet RFC 9535 conformant**.
+This project implements all RFC selectors and all currently registered standard
+function extensions. It **does not yet claim full RFC 9535 conformance** because
+two I-Regexp result cases still differ from the upstream compliance suite, and
+that suite has not yet been integrated into the Maven build.
 
 ## Build and runtime
 
@@ -38,6 +41,7 @@ not yet expose a stable public entry point for applications outside this package
 
 | RFC feature | Status | Current behavior |
 | --- | --- | --- |
+| Query well-formedness | Implemented | RFC blank space is accepted only at the grammar's `S` positions. Invalid forms such as `$. name`, `$.. [0]`, `length (@)`, and the legacy `$.[0]` raise `JsonPathException`. |
 | Root identifier | Implemented | Queries start with `$`; the root-only query `$` returns the complete input document as one result. |
 | Child name selector | Implemented | Supports RFC dot shorthand, including Unicode names such as `$.ключ` and `$.日本語`, and quoted bracket names such as `$['store']` and `$["store"]`. |
 | Quoted name escapes | Implemented | Supports every RFC escape (`\b`, `\f`, `\n`, `\r`, `\t`, `\/`, `\\`, escaped delimiters, and `\uXXXX`), validates control characters and surrogate pairs, and decodes supplementary Unicode characters. |
@@ -47,7 +51,7 @@ not yet expose a stable public entry point for applications outside this package
 | Multiple selectors in one child segment | Implemented | Names, indexes, slices, wildcards, and filters can be freely mixed; selector order and duplicate results are preserved. |
 | Descendant segment | Implemented | Supports `..name`, `..*`, and bracket forms such as `$..[0]`, `$..['name']`, `$..[0:2,5]`, and `$..[*]`, applying selectors to the input node and each descendant in RFC traversal order. |
 | Filter selector | Implemented | The main ANTLR grammar compiles filters as part of the complete JSONPath parse tree. Supports current (`@`) and root (`$`) queries, nested filters, existence tests, parentheses, `!`, `&&`, `\|\|`, `==`, `!=`, `<`, `<=`, `>`, `>=`, and string, number, boolean, and `null` literals. |
-| Function extensions | Implemented | Implements all standard functions: `length()` for strings, arrays, and objects; `count()` for nodelists; `match()` and `search()` with checked [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html) syntax; and `value()` for converting a single-node nodelist to a value. Function signatures and ValueType/LogicalType/NodesType placement are enforced by the grammar. |
+| Function extensions | Implemented | Implements all five functions in the current [IANA JSONPath Function Extensions registry](https://www.iana.org/assignments/jsonpath/jsonpath.xhtml): `length()` for strings, arrays, and objects; `count()` for nodelists; `match()` and `search()` with checked [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html) syntax; and `value()` for converting a single-node nodelist to a value. Function signatures and ValueType/LogicalType/NodesType placement are enforced by the grammar. |
 
 The RFC allows a query to contain zero or more segments, defines general
 comma-separated selector sequences, and specifies filters and standard function
@@ -57,42 +61,121 @@ extensions. See the RFC sections for the
 [segments](https://www.rfc-editor.org/rfc/rfc9535.html#section-2.5), and
 [functions](https://www.rfc-editor.org/rfc/rfc9535.html#section-2.4).
 
-## Accepted subset examples
+This status was checked against RFC 9535, the current
+[RFC 9535 errata](https://errata.rfc-editor.org/search/?rfc_number=9535), the
+[IANA function registry](https://www.iana.org/assignments/jsonpath/jsonpath.xhtml),
+and the upstream
+[JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite).
+The held errata concern alternative ordering in a generic PEG grammar; they do
+not change the behavior of the five explicitly typed function productions used
+by this project.
+
+A one-off values-only audit against compliance-suite revision
+[`7be7c1f`](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite/tree/7be7c1fc28057c91e8eefaf197060fba7ed43acd)
+passed 701 of 703 cases, with all syntax acceptance and rejection checks passing.
+The two remaining result differences expect unescaped `^` and `$` to act as
+regular-expression anchors, while this project treats them as ordinary I-Regexp
+characters according to the normative XML Schema semantics referenced by RFC
+9485. That interpretation difference needs to be resolved and documented before
+the project claims full conformance. This audit is informational for now; the
+suite is not yet part of the Maven build.
+
+## Examples
+
+### Root, names, escapes, and wildcards
 
 ```text
 $
 $.store.book
 $.корінь.ключ
+$.日本語
 $['store']["book"]
+$.store.book[*].title
+$['a.b']
+$['quote\'and\\slash']
+$["line\nbreak"]
+$['\uD83D\uDE00']
+$.length
 $.store.*
 $[*]
+```
+
+Names containing punctuation, whitespace, quotes, backslashes, or other
+characters unavailable in dot shorthand use a quoted name selector. Function
+keywords remain valid property names, as shown by `$.length`.
+
+### Indexes, slices, and selector lists
+
+```text
 $[0]
 $[-1]
 $[0,2,4]
+$[0,0]
 $['book','bicycle']
 $[0:2,5]
 $[2,0:2,*]
 $[1:5]
 $[1:9:2]
+$[:3]
+$[5:]
+$[5:1:-2]
 $[::-1]
+$[::0]
+```
+
+Selector order and duplicate results are preserved. A zero slice step is valid
+and selects no elements.
+
+### Descendant segments
+
+```text
 $..title
 $..*
 $..['title','name']
 $..[0]
+$..[0:2,5]
+$..[?@.status == 'ready']
+```
+
+### Filters and comparisons
+
+```text
+$.values[?@ > 3.5]
 $.store.book[?@.price < 10]
 $.store.book[?@.isbn]
+$.store.book[?!@.isbn]
+$.items[?@.value == null]
+$.items[?(@.price < 10 || @.featured == true)]
 $.store.book[?@.price <= $.maxPrice && @.available == true]
 $.groups[?@.items[?@.active == true]]
 $..[?@.status == 'ready']
-$.store.book[?length(@.author) > 10]
-$.groups[?count(@.items[*]) >= 2]
-$.events[?match(@.date, '2026-..-..')]
-$.store.book[?search(@.author, '[BR]ob')]
-$[?value(@..color) == 'red']
+$.items[?@.missing == $.alsoMissing]
 ```
 
-These examples are accepted by the current grammar; partially implemented features
-remain subject to the semantic caveats in the table above.
+The last example demonstrates the RFC `Nothing` rule: two absent singular-query
+results compare equal. Existence tests depend on whether a node is selected, not
+on whether its JSON value is truthy; a selected `null` or `false` value therefore
+still exists.
+
+### Standard function extensions
+
+```text
+$.store.book[?length(@.author) > 10]
+$.collections[?length(@) >= 3]
+$.groups[?count(@.items[*]) >= 2]
+$.objects[?count(@.*) == 1]
+$.events[?match(@.date, '2026-..-..')]
+$.zones[?match(@.timezone, 'Europe/.*')]
+$.items[?match(@.code, '[A-Z]{2}[0-9]{3}')]
+$.store.book[?search(@.author, '[BR]ob')]
+$.items[?search(@.name, '\\p{L}+')]
+$[?value(@..color) == 'red']
+$.groups[?length(value(@..label)) > 3]
+```
+
+These examples are accepted by the current grammar. Inside a quoted JSONPath
+string, an I-Regexp backslash must itself be escaped, hence `'\\p{L}+'` for the
+Unicode letter category.
 
 Missing object members and out-of-range array indexes produce no result rather than
 an exception. Wildcards and filters operate on both array elements and object member
@@ -103,9 +186,19 @@ even when the selected JSON value is `null`.
 
 ## RFC conformance roadmap
 
-1. Tighten whitespace and segment grammar to the RFC.
-2. Add an RFC 9535 conformance suite, including ordering, duplicate-result,
-   Unicode, normalized-path, and invalid-query cases.
+1. Resolve and document the RFC 9485/CTS interpretation difference for
+   unescaped `^` and `$` in `match()` and `search()` patterns, then pin the
+   intended behavior with tests.
+2. Integrate a pinned revision of the upstream JSONPath Compliance Test Suite,
+   covering valid results, invalid-query rejection, Unicode, functions,
+   ordering, duplicate results, and permitted non-deterministic object order.
+3. Resolve every value-result and validation failure from that suite and publish
+   the tested suite revision and pass rate before claiming RFC conformance.
+
+RFC 9535 explicitly permits an API to return values, Normalized Paths, both, or
+another representation. Therefore, Normalized Path output remains an API feature
+below rather than a blocker for value-result conformance. When path output is
+implemented, the suite's `result_paths` cases should be enabled as well.
 
 ## API roadmap
 

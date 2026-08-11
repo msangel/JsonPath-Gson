@@ -89,6 +89,14 @@ class AntlrParserTest {
         assertThrows(JsonPathException.class, () -> parser.parseExpression(path));
     }
 
+    @ParameterizedTest(name = "RFC whitespace in {1}")
+    @MethodSource("rfcWhitespaceCases")
+    void acceptsWhitespaceAtRfcSPositions(String json, String path, String expectedValues) {
+        List<JsonElement> result = parser.parseExpression(path).exec(json);
+
+        assertEquals(expectedValues, joinValues(result));
+    }
+
     private static Stream<Arguments> executionCases() {
         return Stream.of(
                 Arguments.of("{'store':{'book':[{'title':'A'},{'title':'B'}]}}",
@@ -105,6 +113,23 @@ class AntlrParserTest {
                 Arguments.of("{'true':1,'false':2,'null':3}", "$.false", "2"),
                 Arguments.of("{'true':1,'false':2,'null':3}", "$.null", "3"),
                 Arguments.of("['a','b']", "$[*,*]", "a,b,a,b"));
+    }
+
+    private static Stream<Arguments> rfcWhitespaceCases() {
+        return Stream.of(
+                Arguments.of("['a','b','c']", "$ \t[ \n0 \r,\t 2\n ]", "a,c"),
+                Arguments.of("['a','b','c','d','e']", "$ [ 1 \t: \n5 \r: 2 ]", "b,d"),
+                Arguments.of("{'a':'A','b':'B'}", "$ [ 'a' \t, \n'b' ]", "A,B"),
+                Arguments.of("[[1,2],[3,4]]", "$ \n..[ 0 ][0]", "1"),
+                Arguments.of(
+                        "[{'name':'x','blocked':false},{'name':'y','blocked':false}]",
+                        "$ [ ? \t! \n( \r@ .blocked \t== \ntrue \r) \t&&\n"
+                                + " match( \t@ .name \r, \n'x' \t) ] .name",
+                        "x"),
+                Arguments.of(
+                        "[{'names':['a','b']},{'names':['a']}]",
+                        "$ [ ? length( value( @ .names ) ) == 2 ] .names [ 0 ]",
+                        "a"));
     }
 
     private static Stream<Arguments> quotedPropertyCases() {
@@ -128,6 +153,19 @@ class AntlrParserTest {
                 Arguments.of((String) null),
                 Arguments.of(""),
                 Arguments.of(" $.a"),
+                Arguments.of("$. name"),
+                Arguments.of("$.. name"),
+                Arguments.of("$.. *"),
+                Arguments.of("$.. [0]"),
+                Arguments.of("$.[0]"),
+                Arguments.of("$.[*]"),
+                Arguments.of("$.[?@]"),
+                Arguments.of("$.[ 'a' ]"),
+                Arguments.of("$[?@. name]"),
+                Arguments.of("$[?@.. name]"),
+                Arguments.of("$[?length (@) == 1]"),
+                Arguments.of("$[?match (@, 'x')]"),
+                Arguments.of("$[?@ [ 'a' ] == 1]"),
                 Arguments.of("$.1name"),
                 Arguments.of("$.first-name"),
                 Arguments.of("$.\u007F"),

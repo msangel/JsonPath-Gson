@@ -5,13 +5,13 @@ options {
 }
 
 jsonPath
-    : ROOT pathSegment* EOF
+    : ROOT (WS? pathSegment)* EOF
     ;
 
 pathSegment
     : DOT memberName
     | RECURSIVE_DESCENT (memberName | bracketSelector)
-    | DOT? bracketSelector
+    | bracketSelector
     ;
 
 memberName
@@ -20,15 +20,17 @@ memberName
     ;
 
 bracketSelector
-    : LEFT_BRACKET selector (COMMA selector)* RIGHT_BRACKET
+    : LEFT_BRACKET WS? selector
+        (WS? COMMA WS? selector)* WS? RIGHT_BRACKET
     ;
 
 selector
     : WILDCARD                                      # wildcardSelector
     | quotedName                                    # propertySelector
     | INTEGER                                       # indexSelector
-    | INTEGER? COLON INTEGER? (COLON INTEGER?)?     # sliceSelector
-    | FILTER logicalExpression                      # filterSelector
+    | (INTEGER WS?)? COLON WS?
+        (INTEGER WS?)? (COLON (WS? INTEGER)?)? # sliceSelector
+    | FILTER WS? logicalExpression              # filterSelector
     ;
 
 quotedName
@@ -37,22 +39,23 @@ quotedName
     ;
 
 logicalExpression
-    : logicalAndExpression (OR logicalAndExpression)*
+    : logicalAndExpression (WS? OR WS? logicalAndExpression)*
     ;
 
 logicalAndExpression
-    : basicExpression (AND basicExpression)*
+    : basicExpression (WS? AND WS? basicExpression)*
     ;
 
 basicExpression
-    : NOT? LEFT_PARENTHESIS logicalExpression RIGHT_PARENTHESIS # parenthesizedExpression
-    | comparisonExpression                                      # comparisonBasicExpression
-    | NOT? logicalFunctionExpression                            # functionTestExpression
-    | NOT? query                                                # testExpression
+    : (NOT WS?)? LEFT_PARENTHESIS WS?
+        logicalExpression WS? RIGHT_PARENTHESIS # parenthesizedExpression
+    | comparisonExpression                      # comparisonBasicExpression
+    | (NOT WS?)? logicalFunctionExpression      # functionTestExpression
+    | (NOT WS?)? query                          # testExpression
     ;
 
 comparisonExpression
-    : comparable comparisonOperator comparable
+    : comparable WS? comparisonOperator WS? comparable
     ;
 
 comparable
@@ -81,11 +84,11 @@ comparisonOperator
     ;
 
 query
-    : (ROOT | CURRENT) pathSegment*
+    : (ROOT | CURRENT) (WS? pathSegment)*
     ;
 
 singularQuery
-    : (ROOT | CURRENT) singularPathSegment*
+    : (ROOT | CURRENT) (WS? singularPathSegment)*
     ;
 
 singularPathSegment
@@ -104,15 +107,20 @@ nodesExpression
     ;
 
 valueFunctionExpression
-    : LENGTH LEFT_PARENTHESIS valueExpression RIGHT_PARENTHESIS # lengthFunctionExpression
-    | COUNT LEFT_PARENTHESIS nodesExpression RIGHT_PARENTHESIS  # countFunctionExpression
-    | VALUE LEFT_PARENTHESIS nodesExpression RIGHT_PARENTHESIS  # valueFunctionExpressionCall
+    : LENGTH LEFT_PARENTHESIS WS? valueExpression WS? RIGHT_PARENTHESIS
+        # lengthFunctionExpression
+    | COUNT LEFT_PARENTHESIS WS? nodesExpression WS? RIGHT_PARENTHESIS
+        # countFunctionExpression
+    | VALUE LEFT_PARENTHESIS WS? nodesExpression WS? RIGHT_PARENTHESIS
+        # valueFunctionExpressionCall
     ;
 
 logicalFunctionExpression
-    : MATCH LEFT_PARENTHESIS valueExpression COMMA valueExpression RIGHT_PARENTHESIS
+    : MATCH LEFT_PARENTHESIS WS? valueExpression WS?
+        COMMA WS? valueExpression WS? RIGHT_PARENTHESIS
         # matchFunctionExpression
-    | SEARCH LEFT_PARENTHESIS valueExpression COMMA valueExpression RIGHT_PARENTHESIS
+    | SEARCH LEFT_PARENTHESIS WS? valueExpression WS?
+        COMMA WS? valueExpression WS? RIGHT_PARENTHESIS
         # searchFunctionExpression
     ;
 

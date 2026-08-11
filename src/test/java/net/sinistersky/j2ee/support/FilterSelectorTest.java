@@ -57,7 +57,6 @@ class FilterSelectorTest {
             "$[?@.price &&]",
             "$[?(@.price]",
             "$[?@.* == 1]",
-            "$[?length(@) == 1]",
             "$[?@.price == 1 == 1]"
     })
     void rejectsInvalidOrUnsupportedFilterExpressions(String path) {

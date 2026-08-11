@@ -3,6 +3,7 @@ package net.sinistersky.j2ee.support;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -14,6 +15,10 @@ class FilterExpressions {
 
     interface ValueExpression {
         FilterValue evaluate(JsonElement current, JsonElement root);
+    }
+
+    interface NodesExpression {
+        List<JsonElement> evaluate(JsonElement current, JsonElement root);
     }
 
     static final class FilterValue {
@@ -62,22 +67,81 @@ class FilterExpressions {
     }
 
     static FilterExpression queryTest(final Expression query, final boolean relative) {
-        return (current, root) -> {
-            JsonElement start = relative ? current : root;
-            return !query.execFrom(start, root).isEmpty();
-        };
+        NodesExpression nodes = queryNodes(query, relative);
+        return (current, root) -> !nodes.evaluate(current, root).isEmpty();
     }
 
     static ValueExpression queryValue(final Expression query, final boolean relative) {
+        NodesExpression nodes = queryNodes(query, relative);
+        return (current, root) -> {
+            List<JsonElement> values = nodes.evaluate(current, root);
+            return values.isEmpty() ? FilterValue.NOTHING : FilterValue.of(values.get(0));
+        };
+    }
+
+    static NodesExpression queryNodes(final Expression query, final boolean relative) {
         return (current, root) -> {
             JsonElement start = relative ? current : root;
-            List<JsonElement> values = query.execFrom(start, root);
-            return values.isEmpty() ? FilterValue.NOTHING : FilterValue.of(values.get(0));
+            return query.execFrom(start, root);
         };
     }
 
     static ValueExpression literal(final JsonElement value) {
         return (current, root) -> FilterValue.of(value);
+    }
+
+    static ValueExpression length(final ValueExpression argument) {
+        return (current, root) -> {
+            FilterValue result = argument.evaluate(current, root);
+            if (!result.present) {
+                return FilterValue.NOTHING;
+            }
+            JsonElement value = result.value;
+            if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                String string = value.getAsString();
+                return FilterValue.of(new JsonPrimitive(
+                        string.codePointCount(0, string.length())));
+            }
+            if (value.isJsonArray()) {
+                return FilterValue.of(new JsonPrimitive(value.getAsJsonArray().size()));
+            }
+            if (value.isJsonObject()) {
+                return FilterValue.of(new JsonPrimitive(value.getAsJsonObject().size()));
+            }
+            return FilterValue.NOTHING;
+        };
+    }
+
+    static ValueExpression count(final NodesExpression argument) {
+        return (current, root) -> FilterValue.of(
+                new JsonPrimitive(argument.evaluate(current, root).size()));
+    }
+
+    static ValueExpression value(final NodesExpression argument) {
+        return (current, root) -> {
+            List<JsonElement> values = argument.evaluate(current, root);
+            return values.size() == 1
+                    ? FilterValue.of(values.get(0)) : FilterValue.NOTHING;
+        };
+    }
+
+    static FilterExpression regularExpression(final ValueExpression input,
+            final ValueExpression regularExpression, final boolean search) {
+        return (current, root) -> {
+            String inputString = string(input.evaluate(current, root));
+            String regularExpressionString =
+                    string(regularExpression.evaluate(current, root));
+            if (inputString == null || regularExpressionString == null) {
+                return false;
+            }
+            Pattern pattern = IRegexp.compile(regularExpressionString);
+            if (pattern == null) {
+                return false;
+            }
+            return search
+                    ? pattern.matcher(inputString).find()
+                    : pattern.matcher(inputString).matches();
+        };
     }
 
     static FilterExpression comparison(final ValueExpression left, final String operator,
@@ -112,6 +176,14 @@ class FilterExpressions {
             return left.present == right.present;
         }
         return jsonEquals(left.value, right.value);
+    }
+
+    private static String string(FilterValue value) {
+        if (!value.present || !value.value.isJsonPrimitive()
+                || !value.value.getAsJsonPrimitive().isString()) {
+            return null;
+        }
+        return value.value.getAsString();
     }
 
     private static boolean jsonEquals(JsonElement left, JsonElement right) {

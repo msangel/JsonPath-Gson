@@ -12,20 +12,28 @@ import net.sinistersky.j2ee.support.antlr.JsonPathParser.BracketSelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.ComparableContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.ComparisonBasicExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.ComparisonExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.CountFunctionExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.FilterSelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.FunctionTestExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.IndexSelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.LengthFunctionExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.LiteralContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.LogicalAndExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.LogicalExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.MatchFunctionExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.NodesExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.ParenthesizedExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.PathSegmentContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.PropertySelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.QueryContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.SearchFunctionExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.SelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.SingularPathSegmentContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.SingularQueryContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.SliceSelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.TestExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.ValueExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.ValueFunctionExpressionCallContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.WildcardSelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParserBaseVisitor;
 import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
@@ -221,6 +229,13 @@ class AntlrParser {
         }
 
         @Override
+        public Object visitFunctionTestExpression(FunctionTestExpressionContext context) {
+            FilterExpression expression =
+                    (FilterExpression) visit(context.logicalFunctionExpression());
+            return context.NOT() == null ? expression : FilterExpressions.not(expression);
+        }
+
+        @Override
         public Object visitComparisonExpression(ComparisonExpressionContext context) {
             FilterExpressions.ValueExpression left =
                     (FilterExpressions.ValueExpression) visit(context.comparable(0));
@@ -235,8 +250,10 @@ class AntlrParser {
             if (context.literal() != null) {
                 return visit(context.literal());
             }
-            ParsedQuery query = parseQuery(context.singularQuery());
-            return FilterExpressions.queryValue(query.expression, query.relative);
+            if (context.singularQuery() != null) {
+                return queryValue(context.singularQuery());
+            }
+            return visit(context.valueFunctionExpression());
         }
 
         @Override
@@ -254,6 +271,65 @@ class AntlrParser {
                 return FilterExpressions.literal(JsonNull.INSTANCE);
             }
             return FilterExpressions.literal(new JsonPrimitive(new BigDecimal(text)));
+        }
+
+        @Override
+        public Object visitValueExpression(ValueExpressionContext context) {
+            if (context.literal() != null) {
+                return visit(context.literal());
+            }
+            if (context.singularQuery() != null) {
+                return queryValue(context.singularQuery());
+            }
+            return visit(context.valueFunctionExpression());
+        }
+
+        @Override
+        public Object visitNodesExpression(NodesExpressionContext context) {
+            ParsedQuery query = parseQuery(context.query());
+            return FilterExpressions.queryNodes(query.expression, query.relative);
+        }
+
+        @Override
+        public Object visitLengthFunctionExpression(LengthFunctionExpressionContext context) {
+            return FilterExpressions.length(
+                    (FilterExpressions.ValueExpression) visit(context.valueExpression()));
+        }
+
+        @Override
+        public Object visitCountFunctionExpression(CountFunctionExpressionContext context) {
+            return FilterExpressions.count(
+                    (FilterExpressions.NodesExpression) visit(context.nodesExpression()));
+        }
+
+        @Override
+        public Object visitValueFunctionExpressionCall(
+                ValueFunctionExpressionCallContext context) {
+            return FilterExpressions.value(
+                    (FilterExpressions.NodesExpression) visit(context.nodesExpression()));
+        }
+
+        @Override
+        public Object visitMatchFunctionExpression(MatchFunctionExpressionContext context) {
+            return regularExpression(context.valueExpression(0), context.valueExpression(1), false);
+        }
+
+        @Override
+        public Object visitSearchFunctionExpression(SearchFunctionExpressionContext context) {
+            return regularExpression(context.valueExpression(0), context.valueExpression(1), true);
+        }
+
+        private Object regularExpression(ValueExpressionContext input,
+                ValueExpressionContext regularExpression, boolean search) {
+            return FilterExpressions.regularExpression(
+                    (FilterExpressions.ValueExpression) visit(input),
+                    (FilterExpressions.ValueExpression) visit(regularExpression), search);
+        }
+
+        private static FilterExpressions.ValueExpression queryValue(
+                SingularQueryContext context) {
+            ParsedQuery query = parseQuery(context);
+            return FilterExpressions.queryValue(query.expression, query.relative);
         }
 
         private static ParsedQuery parseQuery(QueryContext context) {

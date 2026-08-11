@@ -47,6 +47,7 @@ logicalAndExpression
 basicExpression
     : NOT? LEFT_PARENTHESIS logicalExpression RIGHT_PARENTHESIS # parenthesizedExpression
     | comparisonExpression                                      # comparisonBasicExpression
+    | NOT? logicalFunctionExpression                            # functionTestExpression
     | NOT? query                                                # testExpression
     ;
 
@@ -57,6 +58,7 @@ comparisonExpression
 comparable
     : literal
     | singularQuery
+    | valueFunctionExpression
     ;
 
 literal
@@ -91,8 +93,36 @@ singularPathSegment
     | LEFT_BRACKET (quotedName | INTEGER) RIGHT_BRACKET
     ;
 
+valueExpression
+    : literal
+    | singularQuery
+    | valueFunctionExpression
+    ;
+
+nodesExpression
+    : query
+    ;
+
+valueFunctionExpression
+    : LENGTH LEFT_PARENTHESIS valueExpression RIGHT_PARENTHESIS # lengthFunctionExpression
+    | COUNT LEFT_PARENTHESIS nodesExpression RIGHT_PARENTHESIS  # countFunctionExpression
+    | VALUE LEFT_PARENTHESIS nodesExpression RIGHT_PARENTHESIS  # valueFunctionExpressionCall
+    ;
+
+logicalFunctionExpression
+    : MATCH LEFT_PARENTHESIS valueExpression COMMA valueExpression RIGHT_PARENTHESIS
+        # matchFunctionExpression
+    | SEARCH LEFT_PARENTHESIS valueExpression COMMA valueExpression RIGHT_PARENTHESIS
+        # searchFunctionExpression
+    ;
+
 identifier
     : IDENTIFIER
+    | LENGTH
+    | COUNT
+    | MATCH
+    | SEARCH
+    | VALUE
     | TRUE
     | FALSE
     | NULL

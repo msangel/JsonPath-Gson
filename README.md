@@ -25,6 +25,9 @@ The same ANTLR lexer and parser handle both JSONPath segments and filter express
 and the parser visitor compiles each filter subtree into a reusable `FilterExpression`
 object. `FilterPathNode` evaluates that object for each array element or object member
 value, while preserving both the current value (`@`) and document root (`$`).
+The five RFC function names are fixed lexer tokens, and their signatures are encoded
+in the grammar, so non-well-typed calls are rejected while parsing rather than during
+document evaluation.
 
 Evaluation is iterator-based internally, but the current public execution methods
 collect every result into a list. There is no public lazy-result API yet. Also,
@@ -43,8 +46,8 @@ not yet expose a stable public entry point for applications outside this package
 | Array slice selector | Implemented | Implements RFC bounds normalization, omitted bounds, positive/negative steps, reverse traversal, empty results for step `0`, and selection from arrays only. |
 | Multiple selectors in one child segment | Implemented | Names, indexes, slices, wildcards, and filters can be freely mixed; selector order and duplicate results are preserved. |
 | Descendant segment | Implemented | Supports `..name`, `..*`, and bracket forms such as `$..[0]`, `$..['name']`, `$..[0:2,5]`, and `$..[*]`, applying selectors to the input node and each descendant in RFC traversal order. |
-| Filter selector | Implemented | The main ANTLR grammar compiles filters as part of the complete JSONPath parse tree. Supports current (`@`) and root (`$`) queries, nested filters, existence tests, parentheses, `!`, `&&`, `\|\|`, `==`, `!=`, `<`, `<=`, `>`, `>=`, and string, number, boolean, and `null` literals. Function expressions remain unavailable as documented below. |
-| Function extensions | Missing | RFC functions `length()`, `count()`, `match()`, `search()`, and `value()` are not implemented. |
+| Filter selector | Implemented | The main ANTLR grammar compiles filters as part of the complete JSONPath parse tree. Supports current (`@`) and root (`$`) queries, nested filters, existence tests, parentheses, `!`, `&&`, `\|\|`, `==`, `!=`, `<`, `<=`, `>`, `>=`, and string, number, boolean, and `null` literals. |
+| Function extensions | Implemented | Implements all standard functions: `length()` for strings, arrays, and objects; `count()` for nodelists; `match()` and `search()` with checked [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html) syntax; and `value()` for converting a single-node nodelist to a value. Function signatures and ValueType/LogicalType/NodesType placement are enforced by the grammar. |
 
 The RFC allows a query to contain zero or more segments, defines general
 comma-separated selector sequences, and specifies filters and standard function
@@ -81,6 +84,11 @@ $.store.book[?@.isbn]
 $.store.book[?@.price <= $.maxPrice && @.available == true]
 $.groups[?@.items[?@.active == true]]
 $..[?@.status == 'ready']
+$.store.book[?length(@.author) > 10]
+$.groups[?count(@.items[*]) >= 2]
+$.events[?match(@.date, '2026-..-..')]
+$.store.book[?search(@.author, '[BR]ob')]
+$[?value(@..color) == 'red']
 ```
 
 These examples are accepted by the current grammar; partially implemented features
@@ -96,9 +104,7 @@ even when the selected JSON value is `null`.
 ## RFC conformance roadmap
 
 1. Tighten whitespace and segment grammar to the RFC.
-2. Implement the standard `length()`, `count()`, `match()`, `search()`, and `value()`
-   function extensions.
-3. Add an RFC 9535 conformance suite, including ordering, duplicate-result,
+2. Add an RFC 9535 conformance suite, including ordering, duplicate-result,
    Unicode, normalized-path, and invalid-query cases.
 
 ## API roadmap

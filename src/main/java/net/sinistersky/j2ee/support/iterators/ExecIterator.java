@@ -1,6 +1,5 @@
 package net.sinistersky.j2ee.support.iterators;
 
-import lombok.RequiredArgsConstructor;
 import net.sinistersky.j2ee.support.Expression;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 
@@ -13,16 +12,24 @@ import com.google.gson.JsonElement;
  * @author Vasyl Khrystiuk
  *
  */
-@RequiredArgsConstructor
 public class ExecIterator extends PeekableIterator<JsonElement> {
 
     private final Expression expression;
     private final PeekableIterator<JsonElement> in;
     private final int filterPosition;
+    private final JsonElement root;
 
     private PeekableIterator<JsonElement> current;
     private JsonElement next = null;
     private boolean isNextTaken = false;
+
+    public ExecIterator(Expression expression, PeekableIterator<JsonElement> in,
+            int filterPosition, JsonElement root) {
+        this.expression = expression;
+        this.in = in;
+        this.filterPosition = filterPosition;
+        this.root = root;
+    }
 
     public boolean hasNext() {
         if (current!=null) { // if have current iterator - delegate checking to it
@@ -75,13 +82,16 @@ public class ExecIterator extends PeekableIterator<JsonElement> {
 
         while (in.hasNext()){
             JsonElement next = in.next();
-            PeekableIterator<JsonElement> filtered = pathNode.filter(next); // current element children
+            JsonElement effectiveRoot = root == null ? next : root;
+            PeekableIterator<JsonElement> filtered =
+                    pathNode.filter(next, effectiveRoot); // current element children
             if(filtered.hasNext()){
                 // cases:
                 // 1) no items - skip this case and trying to get item from next iteration
                 // 2) one item - return it
                 // 3) few items - save 'current' iterator for accession other items in this iterator for the next time.
-                ExecIterator iter = new ExecIterator(this.expression, filtered, filterPosition + 1);
+                ExecIterator iter = new ExecIterator(
+                        this.expression, filtered, filterPosition + 1, effectiveRoot);
                 if(iter.hasNext()){
                     JsonElement returned = iter.next();
                     if(iter.hasNext()){ // few items

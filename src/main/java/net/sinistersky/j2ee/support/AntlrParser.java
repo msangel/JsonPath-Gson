@@ -1,18 +1,36 @@
 package net.sinistersky.j2ee.support;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonNull;
+import com.google.gson.JsonPrimitive;
 import net.sinistersky.j2ee.support.antlr.JsonPathLexer;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.BasicExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.BracketSelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.ComparableContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.ComparisonBasicExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.ComparisonExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.FilterSelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.IndexSelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.LiteralContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.LogicalAndExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.LogicalExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.ParenthesizedExpressionContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.PathSegmentContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.PropertySelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.QueryContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.SelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.SingularPathSegmentContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.SingularQueryContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.SliceSelectorContext;
+import net.sinistersky.j2ee.support.antlr.JsonPathParser.TestExpressionContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParser.WildcardSelectorContext;
 import net.sinistersky.j2ee.support.antlr.JsonPathParserBaseVisitor;
 import net.sinistersky.j2ee.support.nodetypes.ArrayIndexPathNode;
 import net.sinistersky.j2ee.support.nodetypes.CSVIndexPathNode;
+import net.sinistersky.j2ee.support.nodetypes.FilterPathNode;
 import net.sinistersky.j2ee.support.nodetypes.NamedPropertyPathNode;
 import net.sinistersky.j2ee.support.nodetypes.PathNode;
 import net.sinistersky.j2ee.support.nodetypes.RecursiveDescentPathNode;
@@ -76,8 +94,7 @@ class AntlrParser {
         }
 
         @Override
-        public Void visitPathSegment(
-                net.sinistersky.j2ee.support.antlr.JsonPathParser.PathSegmentContext context) {
+        public Void visitPathSegment(PathSegmentContext context) {
             if (context.RECURSIVE_DESCENT() != null) {
                 nodes.add(new RecursiveDescentPathNode());
             }
@@ -85,7 +102,7 @@ class AntlrParser {
                 if (context.memberName().WILDCARD() != null) {
                     nodes.add(new WildcardPathNode());
                 } else {
-                    nodes.add(new NamedPropertyPathNode(context.memberName().IDENTIFIER().getText()));
+                    nodes.add(new NamedPropertyPathNode(context.memberName().getText()));
                 }
             } else {
                 nodes.add(createBracketSelector(context.bracketSelector()));
@@ -122,11 +139,17 @@ class AntlrParser {
             }
             if (context instanceof PropertySelectorContext) {
                 PropertySelectorContext property = (PropertySelectorContext) context;
-                return new NamedPropertyPathNode(unquote(property.quotedName().getText()));
+                return new NamedPropertyPathNode(
+                        JsonPathStringDecoder.unquote(property.quotedName().getText()));
             }
             if (context instanceof IndexSelectorContext) {
                 IndexSelectorContext index = (IndexSelectorContext) context;
                 return new ArrayIndexPathNode(parseInteger(index.INTEGER().getText()));
+            }
+            if (context instanceof FilterSelectorContext) {
+                return new FilterPathNode(
+                        (FilterExpression) new FilterExpressionVisitor().visit(
+                                ((FilterSelectorContext) context).logicalExpression()));
             }
             SliceSelectorContext slice = (SliceSelectorContext) context;
             return createSlice(slice);
@@ -156,54 +179,116 @@ class AntlrParser {
             }
         }
 
-        private static String unquote(String value) {
-            StringBuilder result = new StringBuilder();
-            for (int index = 1; index < value.length() - 1; index++) {
-                char current = value.charAt(index);
-                if (current != '\\') {
-                    result.append(current);
-                    continue;
-                }
-                char escaped = value.charAt(++index);
-                switch (escaped) {
-                    case 'b':
-                        result.append('\b');
-                        break;
-                    case 'f':
-                        result.append('\f');
-                        break;
-                    case 'n':
-                        result.append('\n');
-                        break;
-                    case 'r':
-                        result.append('\r');
-                        break;
-                    case 't':
-                        result.append('\t');
-                        break;
-                    case 'u':
-                        index = appendUnicodeEscape(value, index + 1, result);
-                        break;
-                    default:
-                        result.append(escaped);
-                        break;
-                }
+    }
+
+    private static final class FilterExpressionVisitor extends JsonPathParserBaseVisitor<Object> {
+
+        @Override
+        public Object visitLogicalExpression(LogicalExpressionContext context) {
+            List<FilterExpression> expressions = new ArrayList<>();
+            for (LogicalAndExpressionContext child : context.logicalAndExpression()) {
+                expressions.add((FilterExpression) visit(child));
             }
-            return result.toString();
+            return FilterExpressions.or(expressions);
         }
 
-        private static int appendUnicodeEscape(String value, int hexStart, StringBuilder result) {
-            char first = (char) Integer.parseInt(value.substring(hexStart, hexStart + 4), 16);
-            int lastConsumed = hexStart + 3;
-            if (Character.isHighSurrogate(first)) {
-                int lowStart = hexStart + 6;
-                char second = (char) Integer.parseInt(value.substring(lowStart, lowStart + 4), 16);
-                result.appendCodePoint(Character.toCodePoint(first, second));
-                lastConsumed = lowStart + 3;
-            } else {
-                result.append(first);
+        @Override
+        public Object visitLogicalAndExpression(LogicalAndExpressionContext context) {
+            List<FilterExpression> expressions = new ArrayList<>();
+            for (BasicExpressionContext child : context.basicExpression()) {
+                expressions.add((FilterExpression) visit(child));
             }
-            return lastConsumed;
+            return FilterExpressions.and(expressions);
+        }
+
+        @Override
+        public Object visitParenthesizedExpression(ParenthesizedExpressionContext context) {
+            FilterExpression expression = (FilterExpression) visit(context.logicalExpression());
+            return context.NOT() == null ? expression : FilterExpressions.not(expression);
+        }
+
+        @Override
+        public Object visitComparisonBasicExpression(ComparisonBasicExpressionContext context) {
+            return visit(context.comparisonExpression());
+        }
+
+        @Override
+        public Object visitTestExpression(TestExpressionContext context) {
+            ParsedQuery query = parseQuery(context.query());
+            FilterExpression expression =
+                    FilterExpressions.queryTest(query.expression, query.relative);
+            return context.NOT() == null ? expression : FilterExpressions.not(expression);
+        }
+
+        @Override
+        public Object visitComparisonExpression(ComparisonExpressionContext context) {
+            FilterExpressions.ValueExpression left =
+                    (FilterExpressions.ValueExpression) visit(context.comparable(0));
+            FilterExpressions.ValueExpression right =
+                    (FilterExpressions.ValueExpression) visit(context.comparable(1));
+            return FilterExpressions.comparison(
+                    left, context.comparisonOperator().getText(), right);
+        }
+
+        @Override
+        public Object visitComparable(ComparableContext context) {
+            if (context.literal() != null) {
+                return visit(context.literal());
+            }
+            ParsedQuery query = parseQuery(context.singularQuery());
+            return FilterExpressions.queryValue(query.expression, query.relative);
+        }
+
+        @Override
+        public Object visitLiteral(LiteralContext context) {
+            String text = context.getText();
+            if (context.SINGLE_QUOTED_STRING() != null
+                    || context.DOUBLE_QUOTED_STRING() != null) {
+                return FilterExpressions.literal(
+                        new JsonPrimitive(JsonPathStringDecoder.unquote(text)));
+            }
+            if (context.TRUE() != null || context.FALSE() != null) {
+                return FilterExpressions.literal(new JsonPrimitive(Boolean.parseBoolean(text)));
+            }
+            if (context.NULL() != null) {
+                return FilterExpressions.literal(JsonNull.INSTANCE);
+            }
+            return FilterExpressions.literal(new JsonPrimitive(new BigDecimal(text)));
+        }
+
+        private static ParsedQuery parseQuery(QueryContext context) {
+            PathNodeVisitor visitor = new PathNodeVisitor();
+            for (PathSegmentContext segment : context.pathSegment()) {
+                visitor.visitPathSegment(segment);
+            }
+            return new ParsedQuery(
+                    new Expression(visitor.getNodes()), context.CURRENT() != null);
+        }
+
+        private static ParsedQuery parseQuery(SingularQueryContext context) {
+            List<PathNode> nodes = new ArrayList<>();
+            for (SingularPathSegmentContext segment : context.singularPathSegment()) {
+                if (segment.identifier() != null) {
+                    nodes.add(new NamedPropertyPathNode(segment.identifier().getText()));
+                } else if (segment.quotedName() != null) {
+                    nodes.add(new NamedPropertyPathNode(
+                            JsonPathStringDecoder.unquote(segment.quotedName().getText())));
+                } else {
+                    nodes.add(new ArrayIndexPathNode(
+                            PathNodeVisitor.parseInteger(segment.INTEGER().getText())));
+                }
+            }
+            return new ParsedQuery(new Expression(nodes), context.CURRENT() != null);
+        }
+    }
+
+    private static final class ParsedQuery {
+        private final Expression expression;
+        private final boolean relative;
+
+        private ParsedQuery(Expression expression, boolean relative) {
+            this.expression = expression;
+            this.relative = relative;
         }
     }
 }

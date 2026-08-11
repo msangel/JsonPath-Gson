@@ -23,9 +23,14 @@ public class Expression {
     }
 
     public List<JsonElement> exec(JsonElement obj) {
+        return execFrom(obj, obj);
+    }
+
+    List<JsonElement> execFrom(JsonElement start, JsonElement root) {
         ArrayList<JsonElement> list = new ArrayList<>();
-        list.add(obj);
-        PeekableIterator<JsonElement> iterator = new ExecIterator(this, new ArrayListPeekableIterator<>(list), 0);
+        list.add(start);
+        PeekableIterator<JsonElement> iterator = new ExecIterator(
+                this, new ArrayListPeekableIterator<>(list), 0, root);
         List<JsonElement> res = new ArrayList<>();
         while (iterator.hasNext()) {
             res.add(iterator.next());

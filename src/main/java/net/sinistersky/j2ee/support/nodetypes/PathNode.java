@@ -10,4 +10,8 @@ import com.google.gson.JsonElement;
 public interface PathNode {
     PeekableIterator<JsonElement> EMPTY_ITERATOR = new ArrayListPeekableIterator<>(new ArrayList<>());
     PeekableIterator<JsonElement> filter(JsonElement parent);
+
+    default PeekableIterator<JsonElement> filter(JsonElement parent, JsonElement root) {
+        return filter(parent);
+    }
 }

@@ -20,6 +20,12 @@ This project currently implements a useful subset, but **is not yet RFC 9535 con
 `Expression.exec(String)` and `Expression.exec(JsonElement)` return a materialized
 `List<JsonElement>`.
 
+Filter selectors are not interpreted as strings while walking the JSON document.
+The same ANTLR lexer and parser handle both JSONPath segments and filter expressions,
+and the parser visitor compiles each filter subtree into a reusable `FilterExpression`
+object. `FilterPathNode` evaluates that object for each array element or object member
+value, while preserving both the current value (`@`) and document root (`$`).
+
 Evaluation is iterator-based internally, but the current public execution methods
 collect every result into a list. There is no public lazy-result API yet. Also,
 `JsonPath.parseExpression` and `AntlrParser` are package-private, so the project does
@@ -35,9 +41,9 @@ not yet expose a stable public entry point for applications outside this package
 | Wildcard selector | Implemented | Supports `[*]` and `.*` for arrays and objects. Gson insertion order is currently observed for objects, although RFC 9535 does not define object result order. |
 | Array index selector | Implemented | Supports the full I-JSON exact-integer range, negative indexes, and empty results for out-of-range indexes; rejects leading zeros and `-0`. |
 | Array slice selector | Implemented | Implements RFC bounds normalization, omitted bounds, positive/negative steps, reverse traversal, empty results for step `0`, and selection from arrays only. |
-| Multiple selectors in one child segment | Implemented | Names, indexes, slices, and wildcards can be freely mixed; selector order and duplicate results are preserved. Filter selectors remain unavailable as documented below. |
+| Multiple selectors in one child segment | Implemented | Names, indexes, slices, wildcards, and filters can be freely mixed; selector order and duplicate results are preserved. |
 | Descendant segment | Implemented | Supports `..name`, `..*`, and bracket forms such as `$..[0]`, `$..['name']`, `$..[0:2,5]`, and `$..[*]`, applying selectors to the input node and each descendant in RFC traversal order. |
-| Filter selector | Missing | No `?` filter grammar, current-node identifier `@`, comparisons, existence tests, or logical operators. |
+| Filter selector | Implemented | The main ANTLR grammar compiles filters as part of the complete JSONPath parse tree. Supports current (`@`) and root (`$`) queries, nested filters, existence tests, parentheses, `!`, `&&`, `\|\|`, `==`, `!=`, `<`, `<=`, `>`, `>=`, and string, number, boolean, and `null` literals. Function expressions remain unavailable as documented below. |
 | Function extensions | Missing | RFC functions `length()`, `count()`, `match()`, `search()`, and `value()` are not implemented. |
 
 The RFC allows a query to contain zero or more segments, defines general
@@ -70,23 +76,29 @@ $..title
 $..*
 $..['title','name']
 $..[0]
+$.store.book[?@.price < 10]
+$.store.book[?@.isbn]
+$.store.book[?@.price <= $.maxPrice && @.available == true]
+$.groups[?@.items[?@.active == true]]
+$..[?@.status == 'ready']
 ```
 
 These examples are accepted by the current grammar; partially implemented features
 remain subject to the semantic caveats in the table above.
 
 Missing object members and out-of-range array indexes produce no result rather than
-an exception. Wildcards operate on both arrays and object member values. Numeric
-selector lists preserve selector order and repeated matches.
+an exception. Wildcards and filters operate on both array elements and object member
+values. Selector lists preserve selector order and repeated matches. In filter
+comparisons, two absent singular-query results compare equal, matching the RFC
+`Nothing` rules; an existence test is true when its query selects at least one node,
+even when the selected JSON value is `null`.
 
 ## RFC conformance roadmap
 
 1. Tighten whitespace and segment grammar to the RFC.
-2. Implement filters: `@`, nested root queries, existence tests, comparisons,
-   `&&`, `||`, `!`, and primitive literals.
-3. Implement the standard `length()`, `count()`, `match()`, `search()`, and `value()`
+2. Implement the standard `length()`, `count()`, `match()`, `search()`, and `value()`
    function extensions.
-4. Add an RFC 9535 conformance suite, including ordering, duplicate-result,
+3. Add an RFC 9535 conformance suite, including ordering, duplicate-result,
    Unicode, normalized-path, and invalid-query cases.
 
 ## API roadmap

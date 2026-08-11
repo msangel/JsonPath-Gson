@@ -101,6 +101,9 @@ class AntlrParserTest {
                         "$[0:2,5]", "a,b,f"),
                 Arguments.of("['a','b','c']", "$[2,0:2,2,*]", "c,a,b,c,a,b,c"),
                 Arguments.of("{'a':'A','b':'B'}", "$['b','a','b']", "B,A,B"),
+                Arguments.of("{'true':1,'false':2,'null':3}", "$.true", "1"),
+                Arguments.of("{'true':1,'false':2,'null':3}", "$.false", "2"),
+                Arguments.of("{'true':1,'false':2,'null':3}", "$.null", "3"),
                 Arguments.of("['a','b']", "$[*,*]", "a,b,a,b"));
     }
 

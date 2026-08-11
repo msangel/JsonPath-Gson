@@ -5,30 +5,44 @@ import java.util.List;
 
 import com.google.gson.JsonElement;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import net.sinistersky.j2ee.support.iterators.PeekableIterator;
 
 @Getter
-@RequiredArgsConstructor
 public class SelectorListPathNode implements PathNode {
 
     private final List<PathNode> selectors;
 
-    @Override
-    public PeekableIterator<JsonElement> filter(JsonElement parent) {
-        return new SelectorListIterator(selectors.iterator(), parent);
+    public SelectorListPathNode(List<PathNode> selectors) {
+        this.selectors = selectors;
     }
 
-    @RequiredArgsConstructor
+    @Override
+    public PeekableIterator<JsonElement> filter(JsonElement parent) {
+        return filter(parent, parent);
+    }
+
+    @Override
+    public PeekableIterator<JsonElement> filter(JsonElement parent, JsonElement root) {
+        return new SelectorListIterator(selectors.iterator(), parent, root);
+    }
+
     private static final class SelectorListIterator extends PeekableIterator<JsonElement> {
         private final Iterator<PathNode> selectors;
         private final JsonElement parent;
+        private final JsonElement root;
         private PeekableIterator<JsonElement> current = EMPTY_ITERATOR;
+
+        private SelectorListIterator(Iterator<PathNode> selectors, JsonElement parent,
+                JsonElement root) {
+            this.selectors = selectors;
+            this.parent = parent;
+            this.root = root;
+        }
 
         @Override
         public boolean hasNext() {
             while (!current.hasNext() && selectors.hasNext()) {
-                current = selectors.next().filter(parent);
+                current = selectors.next().filter(parent, root);
             }
             return current.hasNext();
         }
